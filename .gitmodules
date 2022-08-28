@@ -1,0 +1,3 @@
+[submodule "zerokit"]
+	path = zerokit
+	url = git@github.com:vacp2p/zerokit.git

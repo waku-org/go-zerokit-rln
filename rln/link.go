@@ -20,6 +20,7 @@ package rln
 #cgo darwin,386,!ios LDFLAGS:-L${SRCDIR}/../libs/i686-apple-darwin
 #cgo darwin,arm64,!ios LDFLAGS:-L${SRCDIR}/../libs/aarch64-apple-darwin
 #cgo darwin,amd64,!ios LDFLAGS:-L${SRCDIR}/../libs/x86_64-apple-darwin
-#cgo ios LDFLAGS:-L${SRCDIR}/../libs/universal -framework Security -framework Foundation
+#cgo ios,amd64 LDFLAGS:-L${SRCDIR}/../libs/x86_64-apple-ios -framework Security -framework Foundation
+#cgo ios,arm64 LDFLAGS:-L${SRCDIR}/../libs/aarch64-apple-ios -framework Security -framework Foundation
 */
 import "C"

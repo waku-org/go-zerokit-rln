@@ -7,7 +7,6 @@ import "C"
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"unsafe"
 
 	"github.com/status-im/go-zerokit-rln/rln/resources"
@@ -19,29 +18,27 @@ type RLN struct {
 }
 
 // NewRLN generates an instance of RLN. An instance supports both zkSNARKs logics
-// and Merkle tree data structure and operations. The parameter `depth` indicates the depth of Merkle tree
-// Only a depth of 15, 19 or 20 is allowed
-func NewRLN(depth int) (*RLN, error) {
+// and Merkle tree data structure and operations. It uses a depth of 20 by default
+func NewRLN() (*RLN, error) {
+
+	wasm, err := resources.Asset("tree_height_20/rln.wasm")
+	if err != nil {
+		return nil, err
+	}
+
+	zkey, err := resources.Asset("tree_height_20/rln_final.zkey")
+	if err != nil {
+		return nil, err
+	}
+
+	verifKey, err := resources.Asset("tree_height_20/verification_key.json")
+	if err != nil {
+		return nil, err
+	}
+
 	r := &RLN{}
 
-	if depth != 15 && depth != 19 && depth != 20 {
-		return nil, errors.New("unsupported depth. Only 5, 19 and 20 are allowed")
-	}
-
-	wasm, err := resources.Asset(fmt.Sprintf("tree_height_%d/rln.wasm", depth))
-	if err != nil {
-		return nil, err
-	}
-
-	zkey, err := resources.Asset(fmt.Sprintf("tree_height_%d/rln_final.zkey", depth))
-	if err != nil {
-		return nil, err
-	}
-
-	verifKey, err := resources.Asset(fmt.Sprintf("tree_height_%d/verification_key.json", depth))
-	if err != nil {
-		return nil, err
-	}
+	depth := 20
 
 	wasmBuffer := toCBufferPtr(wasm)
 	zkeyBuffer := toCBufferPtr(zkey)
@@ -55,7 +52,7 @@ func NewRLN(depth int) (*RLN, error) {
 }
 
 // NewRLNWithParams generates an instance of RLN. An instance supports both zkSNARKs logics
-// and Merkle tree data structure and operations. The parameter `depth`` indicates the depth of Merkle tree
+// and Merkle tree data structure and operations. The parameter `depth“ indicates the depth of Merkle tree
 func NewRLNWithParams(depth int, wasm []byte, zkey []byte, verifKey []byte) (*RLN, error) {
 	r := &RLN{}
 
@@ -72,7 +69,7 @@ func NewRLNWithParams(depth int, wasm []byte, zkey []byte, verifKey []byte) (*RL
 
 // NewRLNWithFolder generates an instance of RLN. An instance supports both zkSNARKs logics
 // and Merkle tree data structure and operations. The parameter `deptk` indicates the depth of Merkle tree
-// The parameter ``
+// The parameter “
 func NewRLNWithFolder(depth int, resourcesFolderPath string) (*RLN, error) {
 	r := &RLN{}
 
@@ -288,8 +285,8 @@ func (r *RLN) AddAll(list []IDCommitment) error {
 }
 
 // CalcMerkleRoot returns the root of the Merkle tree that is computed from the supplied list
-func CalcMerkleRoot(list []IDCommitment, depth int) (MerkleNode, error) {
-	rln, err := NewRLN(depth)
+func CalcMerkleRoot(list []IDCommitment) (MerkleNode, error) {
+	rln, err := NewRLN()
 	if err != nil {
 		return MerkleNode{}, err
 	}
@@ -307,9 +304,9 @@ func CalcMerkleRoot(list []IDCommitment, depth int) (MerkleNode, error) {
 // CreateMembershipList produces a list of membership key pairs and also returns the root of a Merkle tree constructed
 // out of the identity commitment keys of the generated list. The output of this function is used to initialize a static
 // group keys (to test waku-rln-relay in the off-chain mode)
-func CreateMembershipList(n int, depth int) ([]MembershipKeyPair, MerkleNode, error) {
+func CreateMembershipList(n int) ([]MembershipKeyPair, MerkleNode, error) {
 	// initialize a Merkle tree
-	rln, err := NewRLN(depth)
+	rln, err := NewRLN()
 	if err != nil {
 		return nil, MerkleNode{}, err
 	}

@@ -18,7 +18,7 @@ type RLNSuite struct {
 }
 
 func (s *RLNSuite) TestMembershipKeyGen() {
-	rln, err := NewRLN(20)
+	rln, err := NewRLN()
 	s.NoError(err)
 
 	key, err := rln.MembershipKeyGen()
@@ -32,7 +32,7 @@ func (s *RLNSuite) TestMembershipKeyGen() {
 }
 
 func (s *RLNSuite) TestGetMerkleRoot() {
-	rln, err := NewRLN(20)
+	rln, err := NewRLN()
 	s.NoError(err)
 
 	root1, err := rln.GetMerkleRoot()
@@ -47,7 +47,7 @@ func (s *RLNSuite) TestGetMerkleRoot() {
 }
 
 func (s *RLNSuite) TestInsertMember() {
-	rln, err := NewRLN(20)
+	rln, err := NewRLN()
 	s.NoError(err)
 
 	keypair, err := rln.MembershipKeyGen()
@@ -58,7 +58,7 @@ func (s *RLNSuite) TestInsertMember() {
 }
 
 func (s *RLNSuite) TestRemoveMember() {
-	rln, err := NewRLN(20)
+	rln, err := NewRLN()
 	s.NoError(err)
 
 	err = rln.DeleteMember(MembershipIndex(0))
@@ -66,7 +66,7 @@ func (s *RLNSuite) TestRemoveMember() {
 }
 
 func (s *RLNSuite) TestMerkleTreeConsistenceBetweenDeletionAndInsertion() {
-	rln, err := NewRLN(20)
+	rln, err := NewRLN()
 	s.NoError(err)
 
 	root1, err := rln.GetMerkleRoot()
@@ -103,7 +103,7 @@ func (s *RLNSuite) TestMerkleTreeConsistenceBetweenDeletionAndInsertion() {
 }
 
 func (s *RLNSuite) TestHash() {
-	rln, err := NewRLN(20)
+	rln, err := NewRLN()
 	s.NoError(err)
 
 	// prepare the input
@@ -117,7 +117,7 @@ func (s *RLNSuite) TestHash() {
 
 func (s *RLNSuite) TestCreateListMembershipKeysAndCreateMerkleTreeFromList() {
 	groupSize := 100
-	list, root, err := CreateMembershipList(groupSize, 20)
+	list, root, err := CreateMembershipList(groupSize)
 	s.NoError(err)
 	s.Len(list, groupSize)
 	s.Len(root, HASH_HEX_SIZE) // check the size of the calculated tree root
@@ -137,7 +137,7 @@ func (s *RLNSuite) TestCheckCorrectness() {
 	}
 
 	// calculate the Merkle tree root out of the extracted id commitments
-	root, err := CalcMerkleRoot(groupIDCommitments, 20)
+	root, err := CalcMerkleRoot(groupIDCommitments)
 	s.NoError(err)
 
 	expectedRoot, _ := hex.DecodeString(STATIC_GROUP_MERKLE_ROOT)
@@ -147,7 +147,7 @@ func (s *RLNSuite) TestCheckCorrectness() {
 }
 
 func (s *RLNSuite) TestValidProof() {
-	rln, err := NewRLN(20)
+	rln, err := NewRLN()
 	s.NoError(err)
 
 	memKeys, err := rln.MembershipKeyGen()
@@ -189,7 +189,7 @@ func (s *RLNSuite) TestValidProof() {
 }
 
 func (s *RLNSuite) TestInvalidProof() {
-	rln, err := NewRLN(20)
+	rln, err := NewRLN()
 	s.NoError(err)
 
 	memKeys, err := rln.MembershipKeyGen()

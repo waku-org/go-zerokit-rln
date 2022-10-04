@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define TEST_TREE_HEIGHT 20
+#define TEST_PARAMETERS_INDEX 2
 
 typedef struct RLN RLN;
 
@@ -53,5 +53,9 @@ bool verify_rln_proof(const struct RLN *ctx,
                       bool *proof_is_valid_ptr);
 
 bool key_gen(const struct RLN *ctx, struct Buffer *output_buffer);
+
+bool seeded_key_gen(const struct RLN *ctx,
+                    const struct Buffer *input_buffer,
+                    struct Buffer *output_buffer);
 
 bool hash(struct RLN *ctx, const struct Buffer *input_buffer, struct Buffer *output_buffer);

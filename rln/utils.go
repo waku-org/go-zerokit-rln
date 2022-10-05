@@ -25,12 +25,12 @@ func toMembershipKeyPairs(groupKeys [][]string) ([]MembershipKeyPair, error) {
 
 func Bytes32(b []byte) [32]byte {
 	var result [32]byte
-	copy(result[:], b)
+	copy(result[32-len(b):], b)
 	return result
 }
 
-func Bytes256(b []byte) [256]byte {
-	var result [256]byte
-	copy(result[:], b)
+func Bytes128(b []byte) [128]byte {
+	var result [128]byte
+	copy(result[128-len(b):], b)
 	return result
 }

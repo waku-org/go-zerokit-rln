@@ -52,6 +52,11 @@ bool verify_rln_proof(const struct RLN *ctx,
                       const struct Buffer *proof_buffer,
                       bool *proof_is_valid_ptr);
 
+bool verify_with_roots(const struct RLN *ctx,
+                       const struct Buffer *proof_buffer,
+                       const struct Buffer *roots_buffer,
+                       bool *proof_is_valid_ptr);
+
 bool key_gen(const struct RLN *ctx, struct Buffer *output_buffer);
 
 bool seeded_key_gen(const struct RLN *ctx,

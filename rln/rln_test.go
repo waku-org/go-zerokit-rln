@@ -183,8 +183,16 @@ func (s *RLNSuite) TestValidProof() {
 	s.NoError(err)
 
 	// verify the proof
-	verified := rln.Verify(msg, *proofRes)
+	verified, err := rln.Verify(msg, *proofRes)
+	s.NoError(err)
+	s.True(verified)
 
+	// verify with roots
+	root, err := rln.GetMerkleRoot()
+	s.NoError(err)
+
+	verified, err = rln.VerifyWithRoots(msg, *proofRes, [][32]byte{root})
+	s.NoError(err)
 	s.True(verified)
 }
 
@@ -227,8 +235,8 @@ func (s *RLNSuite) TestInvalidProof() {
 	s.NoError(err)
 
 	// verify the proof (should not be verified)
-	verified := rln.Verify(msg, *proofRes)
-
+	verified, err := rln.Verify(msg, *proofRes)
+	s.NoError(err)
 	s.False(verified)
 }
 

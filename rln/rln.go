@@ -221,15 +221,38 @@ func (r *RLN) GenerateProof(data []byte, key MembershipKeyPair, index Membership
 
 // Verify verifies a proof generated for the RLN.
 // proof [ proof<128>| root<32>| epoch<32>| share_x<32>| share_y<32>| nullifier<32> | signal_len<8> | signal<var> ]
-func (r *RLN) Verify(data []byte, proof RateLimitProof) bool {
+func (r *RLN) Verify(data []byte, proof RateLimitProof) (bool, error) {
 	proofBytes := proof.serialize(data)
 	proofBuf := toCBufferPtr(proofBytes)
 	res := C.bool(false)
 	if !bool(C.verify_rln_proof(r.ptr, proofBuf, &res)) {
-		return false
+		return false, errors.New("could not verify rln proof")
 	}
 
-	return bool(res)
+	return bool(res), nil
+}
+
+func serializeRoots(roots [][32]byte) []byte {
+	var result []byte
+	for _, r := range roots {
+		result = append(result, r[:]...)
+	}
+	return result
+}
+
+func (r *RLN) VerifyWithRoots(data []byte, proof RateLimitProof, roots [][32]byte) (bool, error) {
+	proofBytes := proof.serialize(data)
+	proofBuf := toCBufferPtr(proofBytes)
+
+	rootBytes := serializeRoots(roots)
+	rootBuf := toCBufferPtr(rootBytes)
+
+	res := C.bool(false)
+	if !bool(C.verify_with_roots(r.ptr, proofBuf, rootBuf, &res)) {
+		return false, errors.New("could not verify with roots")
+	}
+
+	return bool(res), nil
 }
 
 // InsertMember adds the member to the tree

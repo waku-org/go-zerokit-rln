@@ -4,7 +4,7 @@ Go wrappers for [zerokit's RLN](https://github.com/vacp2p/zerokit)
 
 ### Building this library
 ```
-git clone https://github.com/status-im/go-zerokit-rln
+git clone https://github.com/waku-org/go-zerokit-rln
 cd go-zerokit-rln
 git submodule init
 git submodule update --recursive

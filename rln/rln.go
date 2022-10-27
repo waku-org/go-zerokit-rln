@@ -9,7 +9,7 @@ import (
 	"errors"
 	"unsafe"
 
-	"github.com/status-im/go-zerokit-rln/rln/resources"
+	"github.com/waku-org/go-zerokit-rln/rln/resources"
 )
 
 // RLN represents the context used for rln.

@@ -1,4 +1,4 @@
-module github.com/status-im/go-zerokit-rln
+module github.com/waku-org/go-zerokit-rln
 
 go 1.17
 

@@ -57,6 +57,17 @@ func (s *RLNSuite) TestInsertMember() {
 	s.NoError(err)
 }
 
+func (s *RLNSuite) TestInsertMembers() {
+	rln, err := NewRLN()
+	s.NoError(err)
+
+	keypair, err := rln.MembershipKeyGen()
+	s.NoError(err)
+
+	err = rln.InsertMembers(0, []IDCommitment{keypair.IDCommitment})
+	s.NoError(err)
+}
+
 func (s *RLNSuite) TestRemoveMember() {
 	rln, err := NewRLN()
 	s.NoError(err)

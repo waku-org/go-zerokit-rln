@@ -1,6 +1,6 @@
-module github.com/status-im/go-zerokit-rln
+module github.com/waku-org/go-zerokit-rln
 
-go 1.17
+go 1.18
 
 require github.com/stretchr/testify v1.7.2
 

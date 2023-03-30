@@ -23,12 +23,18 @@ func (s *RLNSuite) TestMembershipKeyGen() {
 
 	key, err := rln.MembershipKeyGen()
 	s.NoError(err)
-	s.Len(key.IDKey, 32)
+	s.Len(key.IDSecretHash, 32)
 	s.Len(key.IDCommitment, 32)
-	s.NotEmpty(key.IDKey)
+	s.Len(key.IDTrapdoor, 32)
+	s.Len(key.IDNullifier, 32)
+	s.NotEmpty(key.IDSecretHash)
 	s.NotEmpty(key.IDCommitment)
+	s.NotEmpty(key.IDTrapdoor)
+	s.NotEmpty(key.IDNullifier)
 	s.False(bytes.Equal(key.IDCommitment[:], make([]byte, 32)))
-	s.False(bytes.Equal(key.IDKey[:], make([]byte, 32)))
+	s.False(bytes.Equal(key.IDSecretHash[:], make([]byte, 32)))
+	s.False(bytes.Equal(key.IDTrapdoor[:], make([]byte, 32)))
+	s.False(bytes.Equal(key.IDNullifier[:], make([]byte, 32)))
 }
 
 func (s *RLNSuite) TestGetMerkleRoot() {
@@ -119,10 +125,24 @@ func (s *RLNSuite) TestHash() {
 
 	// prepare the input
 	msg := []byte("Hello")
-	hash, err := rln.Hash(msg)
+	hash, err := rln.Sha256(msg)
 	s.NoError(err)
 
 	expectedHash, _ := hex.DecodeString("4c6ea217404bd5f10e243bac29dc4f1ec36bf4a41caba7b4c8075c54abb3321e")
+	s.Equal(expectedHash, hash[:])
+}
+
+func (s *RLNSuite) TestPoseidon() {
+	rln, err := NewRLN()
+	s.NoError(err)
+
+	// prepare the input
+	msg1, _ := hex.DecodeString("126f4c026cd731979365f79bd345a46d673c5a3f6f588bdc718e6356d02b6fdc")
+	msg2, _ := hex.DecodeString("1f0e5db2b69d599166ab16219a97b82b662085c93220382b39f9f911d3b943b1")
+	hash, err := rln.Poseidon(msg1, msg2)
+	s.NoError(err)
+
+	expectedHash, _ := hex.DecodeString("83e4a6b2dea68aad26f04f32f37ac1e018188a0056b158b2aa026d34266d1f30")
 	s.Equal(expectedHash, hash[:])
 }
 
@@ -202,7 +222,7 @@ func (s *RLNSuite) TestValidProof() {
 	root, err := rln.GetMerkleRoot()
 	s.NoError(err)
 
-	verified, err = rln.VerifyWithRoots(msg, *proofRes, [][32]byte{root})
+	verified, err = rln.Verify(msg, *proofRes, root)
 	s.NoError(err)
 	s.True(verified)
 }
@@ -233,6 +253,9 @@ func (s *RLNSuite) TestInvalidProof() {
 		}
 	}
 
+	root, err := rln.GetMerkleRoot()
+	s.NoError(err)
+
 	// prepare the message
 	msg := []byte("Hello")
 
@@ -246,7 +269,7 @@ func (s *RLNSuite) TestInvalidProof() {
 	s.NoError(err)
 
 	// verify the proof (should not be verified)
-	verified, err := rln.Verify(msg, *proofRes)
+	verified, err := rln.Verify(msg, *proofRes, root)
 	s.NoError(err)
 	s.False(verified)
 }

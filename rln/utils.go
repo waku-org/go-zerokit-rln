@@ -2,13 +2,13 @@ package rln
 
 import "encoding/hex"
 
-func toMembershipKeyPairs(groupKeys [][]string) ([]MembershipKeyPair, error) {
+func toMembershipKeyPairs(groupKeys [][]string) ([]IdentityCredential, error) {
 	// groupKeys is  sequence of membership key tuples in the form of (identity key, identity commitment) all in the hexadecimal format
 	// the toMembershipKeyPairs proc populates a sequence of MembershipKeyPairs using the supplied groupKeys
 
-	groupKeyPairs := []MembershipKeyPair{}
+	groupKeyPairs := []IdentityCredential{}
 	for _, pair := range groupKeys {
-		idKey, err := hex.DecodeString(pair[0])
+		idSecretHash, err := hex.DecodeString(pair[0])
 		if err != nil {
 			return nil, err
 		}
@@ -17,7 +17,7 @@ func toMembershipKeyPairs(groupKeys [][]string) ([]MembershipKeyPair, error) {
 			return nil, err
 		}
 
-		groupKeyPairs = append(groupKeyPairs, MembershipKeyPair{IDKey: IDKey(Bytes32(idKey)), IDCommitment: IDCommitment(Bytes32(idCommitment))})
+		groupKeyPairs = append(groupKeyPairs, IdentityCredential{IDSecretHash: IDSecretHash(Bytes32(idSecretHash)), IDCommitment: IDCommitment(Bytes32(idCommitment))})
 	}
 
 	return groupKeyPairs, nil

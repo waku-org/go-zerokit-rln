@@ -72,4 +72,17 @@ bool seeded_key_gen(const struct RLN *ctx,
                     const struct Buffer *input_buffer,
                     struct Buffer *output_buffer);
 
-bool hash(struct RLN *ctx, const struct Buffer *input_buffer, struct Buffer *output_buffer);
+bool extended_key_gen(const struct RLN *ctx, struct Buffer *output_buffer);
+
+bool seeded_extended_key_gen(const struct RLN *ctx,
+                             const struct Buffer *input_buffer,
+                             struct Buffer *output_buffer);
+
+bool recover_id_secret(const struct RLN *ctx,
+                       const struct Buffer *input_proof_buffer_1,
+                       const struct Buffer *input_proof_buffer_2,
+                       struct Buffer *output_buffer);
+
+bool hash(const struct Buffer *input_buffer, struct Buffer *output_buffer);
+
+bool poseidon_hash(const struct Buffer *input_buffer, struct Buffer *output_buffer);

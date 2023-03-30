@@ -21,7 +21,7 @@ cargo clean
 cross build --release --lib --target=aarch64-unknown-linux-gnu
 cross build --release --lib --target=arm-unknown-linux-gnueabi
 cross build --release --lib --target=arm-unknown-linux-gnueabihf
-cross build --release --lib --target=i686-pc-windows-gnu
+#cross build --release --lib --target=i686-pc-windows-gnu
 cross build --release --lib --target=i686-unknown-linux-gnu
 cross build --release --lib --target=x86_64-pc-windows-gnu
 cross build --release --lib --target=x86_64-unknown-linux-gnu

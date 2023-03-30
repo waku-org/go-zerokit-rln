@@ -7,6 +7,7 @@ import "C"
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"unsafe"
 
 	"github.com/waku-org/go-zerokit-rln/rln/resources"
@@ -92,26 +93,31 @@ func toCBufferPtr(input []byte) *C.Buffer {
 	return in
 }
 
-// MembershipKeyGen generates a MembershipKeyPair that can be used for the registration into the rln membership contract
-func (r *RLN) MembershipKeyGen() (*MembershipKeyPair, error) {
+// MembershipKeyGen generates a IdentityCredential that can be used for the
+// registration into the rln membership contract. Returns an error if the key generation fails
+func (r *RLN) MembershipKeyGen() (*IdentityCredential, error) {
 	buffer := toBuffer([]byte{})
-	if !bool(C.key_gen(r.ptr, &buffer)) {
+	if !bool(C.extended_key_gen(r.ptr, &buffer)) {
 		return nil, errors.New("error in key generation")
 	}
 
-	key := &MembershipKeyPair{
-		IDKey:        [32]byte{},
+	key := &IdentityCredential{
+		IDTrapdoor:   [32]byte{},
+		IDNullifier:  [32]byte{},
+		IDSecretHash: [32]byte{},
 		IDCommitment: [32]byte{},
 	}
 
 	// the public and secret keys together are 64 bytes
 	generatedKeys := C.GoBytes(unsafe.Pointer(buffer.ptr), C.int(buffer.len))
-	if len(generatedKeys) != 64 {
-		return nil, errors.New("the generated keys are invalid")
+	if len(generatedKeys) != 32*4 {
+		return nil, errors.New("generated keys are of invalid length")
 	}
 
-	copy(key.IDKey[:], generatedKeys[:32])
-	copy(key.IDCommitment[:], generatedKeys[32:64])
+	copy(key.IDTrapdoor[:], generatedKeys[:32])
+	copy(key.IDNullifier[:], generatedKeys[32:64])
+	copy(key.IDSecretHash[:], generatedKeys[64:96])
+	copy(key.IDCommitment[:], generatedKeys[96:128])
 
 	return key, nil
 }
@@ -141,11 +147,7 @@ func sliceToPtr(slice []byte) (*C.uchar, C.int) {
 	}
 }
 
-// Hash hashes the plain text supplied in inputs_buffer and then maps it to a field element
-// this proc is used to map arbitrary signals to field element for the sake of proof generation
-// inputs holds the hash input as a byte slice, the output slice will contain a 32 byte slice
-func (r *RLN) Hash(data []byte) (MerkleNode, error) {
-	//  a thin layer on top of the Nim wrapper of the Poseidon hasher
+func (r *RLN) Sha256(data []byte) (MerkleNode, error) {
 	lenPrefData := appendLength(data)
 
 	hashInputBuffer := toCBufferPtr(lenPrefData)
@@ -153,7 +155,7 @@ func (r *RLN) Hash(data []byte) (MerkleNode, error) {
 	var output []byte
 	out := toBuffer(output)
 
-	if !bool(C.hash(r.ptr, hashInputBuffer, &out)) {
+	if !bool(C.hash(hashInputBuffer, &out)) {
 		return MerkleNode{}, errors.New("failed to hash")
 	}
 
@@ -165,11 +167,52 @@ func (r *RLN) Hash(data []byte) (MerkleNode, error) {
 	return result, nil
 }
 
+func (r *RLN) Poseidon(input ...[]byte) ([32]byte, error) {
+	data := serializeSlice(input)
+
+	inputLen := make([]byte, 8)
+	binary.LittleEndian.PutUint64(inputLen, uint64(len(input)))
+
+	lenPrefData := append(inputLen, data...)
+	hashInputBuffer := toCBufferPtr(lenPrefData)
+
+	var output []byte
+	out := toBuffer(output)
+
+	if !bool(C.poseidon_hash(hashInputBuffer, &out)) {
+		return [32]byte{}, errors.New("error in poseidon hash")
+	}
+
+	b := C.GoBytes(unsafe.Pointer(out.ptr), C.int(out.len))
+
+	var result [32]byte
+	copy(result[:], b)
+
+	return result, nil
+}
+
+func ExtractMetadata(proof RateLimitProof) (ProofMetadata, error) {
+
+	var r *RLN
+
+	externalNullifierRes, err := r.Poseidon(proof.Epoch[:], proof.RLNIdentifier[:])
+	if err != nil {
+		return ProofMetadata{}, fmt.Errorf("could not construct the external nullifier: %w", err)
+	}
+
+	return ProofMetadata{
+		Nullifier:         proof.Nullifier,
+		ShareX:            proof.ShareX,
+		ShareY:            proof.ShareY,
+		ExternalNullifier: externalNullifierRes,
+	}, nil
+}
+
 // GenerateProof generates a proof for the RLN given a KeyPair and the index in a merkle tree.
 // The output will containt the proof data and should be parsed as |proof<128>|root<32>|epoch<32>|share_x<32>|share_y<32>|nullifier<32>|
 // integers wrapped in <> indicate value sizes in bytes
-func (r *RLN) GenerateProof(data []byte, key MembershipKeyPair, index MembershipIndex, epoch Epoch) (*RateLimitProof, error) {
-	input := serialize(key.IDKey, index, epoch, data)
+func (r *RLN) GenerateProof(data []byte, key IdentityCredential, index MembershipIndex, epoch Epoch) (*RateLimitProof, error) {
+	input := serialize(key.IDSecretHash, index, epoch, data)
 	inputBuffer := toCBufferPtr(input)
 
 	var output []byte
@@ -219,20 +262,15 @@ func (r *RLN) GenerateProof(data []byte, key MembershipKeyPair, index Membership
 	}, nil
 }
 
-// Verify verifies a proof generated for the RLN.
-// proof [ proof<128>| root<32>| epoch<32>| share_x<32>| share_y<32>| nullifier<32> | signal_len<8> | signal<var> ]
-func (r *RLN) Verify(data []byte, proof RateLimitProof) (bool, error) {
-	proofBytes := proof.serialize(data)
-	proofBuf := toCBufferPtr(proofBytes)
-	res := C.bool(false)
-	if !bool(C.verify_rln_proof(r.ptr, proofBuf, &res)) {
-		return false, errors.New("could not verify rln proof")
+func serialize32(roots [][32]byte) []byte {
+	var result []byte
+	for _, r := range roots {
+		result = append(result, r[:]...)
 	}
-
-	return bool(res), nil
+	return result
 }
 
-func serializeRoots(roots [][32]byte) []byte {
+func serializeSlice(roots [][]byte) []byte {
 	var result []byte
 	for _, r := range roots {
 		result = append(result, r[:]...)
@@ -257,11 +295,14 @@ func serializeCommitments(commitments []IDCommitment) []byte {
 	return result
 }
 
-func (r *RLN) VerifyWithRoots(data []byte, proof RateLimitProof, roots [][32]byte) (bool, error) {
+// proof [ proof<128>| root<32>| epoch<32>| share_x<32>| share_y<32>| nullifier<32> | signal_len<8> | signal<var> ]
+// validRoots should contain a sequence of roots in the acceptable windows.
+// As default, it is set to an empty sequence of roots. This implies that the validity check for the proof's root is skipped
+func (r *RLN) Verify(data []byte, proof RateLimitProof, roots ...[32]byte) (bool, error) {
 	proofBytes := proof.serialize(data)
 	proofBuf := toCBufferPtr(proofBytes)
 
-	rootBytes := serializeRoots(roots)
+	rootBytes := serialize32(roots)
 	rootBuf := toCBufferPtr(rootBytes)
 
 	res := C.bool(false)
@@ -356,14 +397,14 @@ func CalcMerkleRoot(list []IDCommitment) (MerkleNode, error) {
 // CreateMembershipList produces a list of membership key pairs and also returns the root of a Merkle tree constructed
 // out of the identity commitment keys of the generated list. The output of this function is used to initialize a static
 // group keys (to test waku-rln-relay in the off-chain mode)
-func CreateMembershipList(n int) ([]MembershipKeyPair, MerkleNode, error) {
+func CreateMembershipList(n int) ([]IdentityCredential, MerkleNode, error) {
 	// initialize a Merkle tree
 	rln, err := NewRLN()
 	if err != nil {
 		return nil, MerkleNode{}, err
 	}
 
-	var output []MembershipKeyPair
+	var output []IdentityCredential
 	for i := 0; i < n; i++ {
 		// generate a keypair
 		keypair, err := rln.MembershipKeyGen()

@@ -158,7 +158,7 @@ func (s *RLNSuite) TestCheckCorrectness() {
 	groupKeys := STATIC_GROUP_KEYS
 
 	// create a set of MembershipKeyPair objects from groupKeys
-	groupKeyPairs, err := toMembershipKeyPairs(groupKeys)
+	groupKeyPairs, err := ToIdentityCredentials(groupKeys)
 	s.NoError(err)
 
 	// extract the id commitments

@@ -144,10 +144,7 @@ func (r *RLN) Poseidon(input ...[]byte) (MerkleNode, error) {
 	return result, nil
 }
 
-func ExtractMetadata(proof RateLimitProof) (ProofMetadata, error) {
-
-	var r *RLN
-
+func (r *RLN) ExtractMetadata(proof RateLimitProof) (ProofMetadata, error) {
 	externalNullifierRes, err := r.Poseidon(proof.Epoch[:], proof.RLNIdentifier[:])
 	if err != nil {
 		return ProofMetadata{}, fmt.Errorf("could not construct the external nullifier: %w", err)

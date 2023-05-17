@@ -242,6 +242,20 @@ func serializeCommitments(commitments []IDCommitment) []byte {
 	return result
 }
 
+func serializeIndices(indices []MembershipIndex) []byte {
+	var result []byte
+
+	inputLen := make([]byte, 8)
+	binary.LittleEndian.PutUint64(inputLen, uint64(len(indices)))
+	result = append(result, inputLen...)
+
+	for _, index := range indices {
+		result = binary.LittleEndian.AppendUint64(result, uint64(index))
+	}
+
+	return result
+}
+
 // proof [ proof<128>| root<32>| epoch<32>| share_x<32>| share_y<32>| nullifier<32> | signal_len<8> | signal<var> ]
 // validRoots should contain a sequence of roots in the acceptable windows.
 // As default, it is set to an empty sequence of roots. This implies that the validity check for the proof's root is skipped
@@ -270,7 +284,8 @@ func (r *RLN) InsertMember(idComm IDCommitment) error {
 // This proc is atomic, i.e., if any of the insertions fails, all the previous insertions are rolled back
 func (r *RLN) InsertMembers(index MembershipIndex, idComms []IDCommitment) error {
 	idCommBytes := serializeCommitments(idComms)
-	insertionSuccess := r.w.SetLeavesFrom(index, idCommBytes)
+	indicesBytes := serializeIndices(nil)
+	insertionSuccess := r.w.AtomicOperation(index, idCommBytes, indicesBytes)
 	if !insertionSuccess {
 		return errors.New("could not insert members")
 	}
@@ -284,6 +299,17 @@ func (r *RLN) DeleteMember(index MembershipIndex) error {
 	deletionSuccess := r.w.DeleteLeaf(index)
 	if !deletionSuccess {
 		return errors.New("could not delete member")
+	}
+	return nil
+}
+
+// Delete multiple members
+func (r *RLN) DeleteMembers(indices []MembershipIndex) error {
+	idCommBytes := serializeCommitments(nil)
+	indicesBytes := serializeIndices(indices)
+	insertionSuccess := r.w.AtomicOperation(0, idCommBytes, indicesBytes)
+	if !insertionSuccess {
+		return errors.New("could not insert members")
 	}
 	return nil
 }

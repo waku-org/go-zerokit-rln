@@ -78,6 +78,12 @@ func (s *RLNSuite) TestRemoveMember() {
 	rln, err := NewRLN()
 	s.NoError(err)
 
+	keypair, err := rln.MembershipKeyGen()
+	s.NoError(err)
+
+	err = rln.InsertMember(keypair.IDCommitment)
+	s.NoError(err)
+
 	err = rln.DeleteMember(MembershipIndex(0))
 	s.NoError(err)
 }

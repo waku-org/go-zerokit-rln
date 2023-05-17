@@ -62,3 +62,7 @@ func (i RLNWrapper) GenerateRLNProof(input []byte) ([]byte, error) {
 func (i RLNWrapper) VerifyWithRoots(input []byte, roots []byte) (bool, error) {
 	return i.ffi.VerifyWithRoots(input, roots)
 }
+
+func (i RLNWrapper) AtomicOperation(index uint, leaves []byte, indices []byte) bool {
+	return i.ffi.AtomicOperation(index, leaves, indices)
+}

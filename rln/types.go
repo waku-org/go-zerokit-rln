@@ -104,7 +104,7 @@ func init() {
 // STATIC_GROUP_MERKLE_ROOT is the root of the Merkle tree constructed from the STATIC_GROUP_KEYS above
 // only identity commitments are used for the Merkle tree construction
 // the root is created locally, using createMembershipList proc from waku_rln_relay_utils module, and the result is hardcoded in here
-const STATIC_GROUP_MERKLE_ROOT = "25caa6e82a7476394b0ad5bfbca174a0a842479e70eaaeee14fa8096e49072ca"
+const STATIC_GROUP_MERKLE_ROOT = "ca7290e49680fa14eeaeea709e4742a8a074a1bcbfd50a4b3976742ae8a6ca25"
 
 const EPOCH_UNIT_SECONDS = uint64(10) // the rln-relay epoch length in seconds
 

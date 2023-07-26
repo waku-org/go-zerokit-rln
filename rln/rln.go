@@ -75,14 +75,25 @@ func NewRLNWithFolder(depth int, resourcesFolderPath string) (*RLN, error) {
 	return r, nil
 }
 
-// MembershipKeyGen generates a IdentityCredential that can be used for the
-// registration into the rln membership contract. Returns an error if the key generation fails
-func (r *RLN) MembershipKeyGen() (*IdentityCredential, error) {
-	generatedKeys := r.w.ExtendedKeyGen()
-	if generatedKeys == nil {
-		return nil, errors.New("error in key generation")
+func (r *RLN) SetTree(treeHeight uint) error {
+	success := r.w.SetTree(treeHeight)
+	if !success {
+		return errors.New("could not set tree height")
 	}
+	return nil
+}
 
+// Initialize merkle tree with a list of IDCommitments
+func (r *RLN) InitTreeWithMembers(idComms []IDCommitment) error {
+	idCommBytes := serializeCommitments(idComms)
+	initSuccess := r.w.InitTreeWithLeaves(idCommBytes)
+	if !initSuccess {
+		return errors.New("could not init tree")
+	}
+	return nil
+}
+
+func toIdentityCredential(generatedKeys []byte) (*IdentityCredential, error) {
 	key := &IdentityCredential{
 		IDTrapdoor:   [32]byte{},
 		IDNullifier:  [32]byte{},
@@ -100,6 +111,27 @@ func (r *RLN) MembershipKeyGen() (*IdentityCredential, error) {
 	copy(key.IDCommitment[:], generatedKeys[96:128])
 
 	return key, nil
+}
+
+// MembershipKeyGen generates a IdentityCredential that can be used for the
+// registration into the rln membership contract. Returns an error if the key generation fails
+func (r *RLN) MembershipKeyGen() (*IdentityCredential, error) {
+	generatedKeys := r.w.ExtendedKeyGen()
+	if generatedKeys == nil {
+		return nil, errors.New("error in key generation")
+	}
+	return toIdentityCredential(generatedKeys)
+}
+
+// SeededMembershipKeyGen generates a deterministic IdentityCredential using a seed
+// that can be used for the registration into the rln membership contract.
+// Returns an error if the key generation fails
+func (r *RLN) SeededMembershipKeyGen(seed []byte) (*IdentityCredential, error) {
+	generatedKeys := r.w.ExtendedSeededKeyGen(seed)
+	if generatedKeys == nil {
+		return nil, errors.New("error in key generation")
+	}
+	return toIdentityCredential(generatedKeys)
 }
 
 // appendLength returns length prefixed version of the input with the following format
@@ -257,7 +289,7 @@ func serializeIndices(indices []MembershipIndex) []byte {
 // validRoots should contain a sequence of roots in the acceptable windows.
 // As default, it is set to an empty sequence of roots. This implies that the validity check for the proof's root is skipped
 func (r *RLN) Verify(data []byte, proof RateLimitProof, roots ...[32]byte) (bool, error) {
-	proofBytes := proof.serialize(data)
+	proofBytes := proof.serializeWithData(data)
 	rootBytes := serialize32(roots)
 
 	res, err := r.w.VerifyWithRoots(proofBytes, rootBytes)
@@ -266,6 +298,19 @@ func (r *RLN) Verify(data []byte, proof RateLimitProof, roots ...[32]byte) (bool
 	}
 
 	return bool(res), nil
+}
+
+// RecoverIDSecret returns an IDSecret having obtained before two proofs
+func (r *RLN) RecoverIDSecret(proof1 RateLimitProof, proof2 RateLimitProof) (IDSecretHash, error) {
+	proof1Bytes := proof1.serialize()
+	proof2Bytes := proof2.serialize()
+	secret, err := r.w.RecoverIDSecret(proof1Bytes, proof2Bytes)
+	if err != nil {
+		return IDSecretHash{}, err
+	}
+	var result IDSecretHash
+	copy(result[:], secret)
+	return result, nil
 }
 
 // InsertMember adds the member to the tree
@@ -285,6 +330,15 @@ func (r *RLN) InsertMembers(index MembershipIndex, idComms []IDCommitment) error
 	insertionSuccess := r.w.AtomicOperation(index, idCommBytes, indicesBytes)
 	if !insertionSuccess {
 		return errors.New("could not insert members")
+	}
+	return nil
+}
+
+// Insert a member in the tree at specified index
+func (r *RLN) InsertMemberAt(index MembershipIndex, idComm IDCommitment) error {
+	insertionSuccess := r.w.SetLeaf(index, idComm[:])
+	if !insertionSuccess {
+		return errors.New("could not insert member")
 	}
 	return nil
 }
@@ -362,11 +416,8 @@ func CalcMerkleRoot(list []IDCommitment) (MerkleNode, error) {
 		return MerkleNode{}, err
 	}
 
-	// create a Merkle tree
-	for _, c := range list {
-		if err := rln.InsertMember(c); err != nil {
-			return MerkleNode{}, err
-		}
+	if err := rln.InsertMembers(0, list); err != nil {
+		return MerkleNode{}, err
 	}
 
 	return rln.GetMerkleRoot()
@@ -404,4 +455,18 @@ func CreateMembershipList(n int) ([]IdentityCredential, MerkleNode, error) {
 	}
 
 	return output, root, nil
+}
+
+// SetMetadata stores serialized data
+func (r *RLN) SetMetadata(metadata []byte) error {
+	success := r.w.SetMetadata(metadata)
+	if !success {
+		return errors.New("could not set metadata")
+	}
+	return nil
+}
+
+// GetMetadata returns the stored serialized metadata
+func (r *RLN) GetMetadata() ([]byte, error) {
+	return r.w.GetMetadata()
 }

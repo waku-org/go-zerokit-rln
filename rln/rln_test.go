@@ -300,3 +300,24 @@ func (s *RLNSuite) TestEpochComparison() {
 	s.Equal(int64(1), Diff(epoch1, epoch2))
 	s.Equal(int64(-1), Diff(epoch2, epoch1))
 }
+
+func (s *RLNSuite) TestDeleteMembersWithAtomicWrite() {
+	rln, err := NewRLN()
+	s.NoError(err)
+
+	var commitments []IDCommitment
+
+	// Create a Merkle tree with random members
+	for i := 0; i < 3; i++ {
+		// create a new key pair
+		memberKeys, err := rln.MembershipKeyGen()
+		s.NoError(err)
+		commitments = append(commitments, memberKeys.IDCommitment)
+	}
+
+	err = rln.InsertMembers(0, commitments) // If inserting members from scratch, should the index be 0 or 1?
+	s.NoError(err)
+
+	err = rln.DeleteMembers([]uint{2}) // This should delete index 2, but fails
+	s.NoError(err)
+}

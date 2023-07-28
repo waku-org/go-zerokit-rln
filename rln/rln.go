@@ -3,6 +3,7 @@ package rln
 import "C"
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -282,7 +283,17 @@ func (r *RLN) InsertMember(idComm IDCommitment) error {
 func (r *RLN) InsertMembers(index MembershipIndex, idComms []IDCommitment) error {
 	idCommBytes := serializeCommitments(idComms)
 	indicesBytes := serializeIndices(nil)
+
+	fmt.Println("--------------")
+	fmt.Println("Sending the following values to atomic_operation:")
+	fmt.Println("* START: ", index)
+	fmt.Println("* LEAVES: ", hex.EncodeToString(idCommBytes))
+	fmt.Println("* INDICES: ", hex.EncodeToString(indicesBytes))
+
 	insertionSuccess := r.w.AtomicOperation(index, idCommBytes, indicesBytes)
+	fmt.Println("\n* EXECUTION RESULT SUCCESSFUL: ", insertionSuccess)
+	fmt.Println("--------------")
+
 	if !insertionSuccess {
 		return errors.New("could not insert members")
 	}
@@ -304,9 +315,19 @@ func (r *RLN) DeleteMember(index MembershipIndex) error {
 func (r *RLN) DeleteMembers(indices []MembershipIndex) error {
 	idCommBytes := serializeCommitments(nil)
 	indicesBytes := serializeIndices(indices)
-	insertionSuccess := r.w.AtomicOperation(0, idCommBytes, indicesBytes)
-	if !insertionSuccess {
-		return errors.New("could not insert members")
+
+	fmt.Println("--------------")
+	fmt.Println("Sending the following values to atomic_operation:")
+	fmt.Println("* START: ", 0)
+	fmt.Println("* LEAVES: ", hex.EncodeToString(idCommBytes))
+	fmt.Println("* INDICES: ", hex.EncodeToString(indicesBytes))
+
+	deleteSuccess := r.w.AtomicOperation(0, idCommBytes, indicesBytes)
+	fmt.Println("\n* EXECUTION RESULT SUCCESSFUL: ", deleteSuccess)
+	fmt.Println("--------------")
+
+	if !deleteSuccess {
+		return errors.New("could not delete members")
 	}
 	return nil
 }

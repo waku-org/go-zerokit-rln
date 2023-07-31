@@ -328,6 +328,23 @@ func (r *RLN) GetMerkleRoot() (MerkleNode, error) {
 	return result, nil
 }
 
+// GetLeaf reads the value stored at some index in the Merkle Tree
+func (r *RLN) GetLeaf(index MembershipIndex) (IDCommitment, error) {
+	b, err := r.w.GetLeaf(index)
+	if err != nil {
+		return IDCommitment{}, err
+	}
+
+	if len(b) != 32 {
+		return IDCommitment{}, errors.New("wrong output size")
+	}
+
+	var result IDCommitment
+	copy(result[:], b)
+
+	return result, nil
+}
+
 // AddAll adds members to the Merkle tree
 func (r *RLN) AddAll(list []IDCommitment) error {
 	for _, member := range list {

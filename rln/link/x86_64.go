@@ -55,6 +55,10 @@ func (i RLNWrapper) GetRoot() ([]byte, error) {
 	return i.ffi.GetRoot()
 }
 
+func (i RLNWrapper) GetLeaf(index uint) ([]byte, error) {
+	return i.ffi.GetLeaf(index)
+}
+
 func (i RLNWrapper) GenerateRLNProof(input []byte) ([]byte, error) {
 	return i.ffi.GenerateRLNProof(input)
 }

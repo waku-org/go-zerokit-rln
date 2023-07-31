@@ -191,14 +191,18 @@ func (s *RLNSuite) TestValidProof() {
 	s.NoError(err)
 
 	//peer's index in the Merkle Tree
-	index := 5
+	index := uint(5)
 
 	// Create a Merkle tree with random members
-	for i := 0; i < 10; i++ {
+	for i := uint(0); i < 10; i++ {
 		if i == index {
 			// insert the current peer's pk
 			err = rln.InsertMember(memKeys.IDCommitment)
 			s.NoError(err)
+
+			fifthIndexLeaf, err := rln.GetLeaf(index)
+			s.NoError(err)
+			s.Equal(memKeys.IDCommitment, fifthIndexLeaf)
 		} else {
 			// create a new key pair
 			memberKeys, err := rln.MembershipKeyGen()
@@ -206,6 +210,10 @@ func (s *RLNSuite) TestValidProof() {
 
 			err = rln.InsertMember(memberKeys.IDCommitment)
 			s.NoError(err)
+
+			leaf, err := rln.GetLeaf(i)
+			s.NoError(err)
+			s.Equal(memberKeys.IDCommitment, leaf)
 		}
 	}
 

@@ -470,3 +470,14 @@ func (r *RLN) SetMetadata(metadata []byte) error {
 func (r *RLN) GetMetadata() ([]byte, error) {
 	return r.w.GetMetadata()
 }
+
+// AtomicOperation can be used to insert and remove elements into the merkle tree
+func (r *RLN) AtomicOperation(index MembershipIndex, idCommsToInsert []IDCommitment, indicesToRemove []MembershipIndex) error {
+	idCommBytes := serializeCommitments(idCommsToInsert)
+	indicesBytes := serializeIndices(indicesToRemove)
+	execSuccess := r.w.AtomicOperation(index, idCommBytes, indicesBytes)
+	if !execSuccess {
+		return errors.New("could not execute atomic_operation")
+	}
+	return nil
+}

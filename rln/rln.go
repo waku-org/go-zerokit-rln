@@ -3,6 +3,7 @@ package rln
 import "C"
 import (
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -37,7 +38,7 @@ func NewRLN() (*RLN, error) {
 
 	depth := 20
 
-	r.w, err = link.NewWithParams(depth, wasm, zkey, verifKey)
+	r.w, err = link.NewWithParams(depth, wasm, zkey, verifKey, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -47,11 +48,19 @@ func NewRLN() (*RLN, error) {
 
 // NewRLNWithParams generates an instance of RLN. An instance supports both zkSNARKs logics
 // and Merkle tree data structure and operations. The parameter `depth“ indicates the depth of Merkle tree
-func NewRLNWithParams(depth int, wasm []byte, zkey []byte, verifKey []byte) (*RLN, error) {
+func NewRLNWithParams(depth int, wasm []byte, zkey []byte, verifKey []byte, treeConfig *TreeConfig) (*RLN, error) {
 	r := &RLN{}
 	var err error
 
-	r.w, err = link.NewWithParams(depth, wasm, zkey, verifKey)
+	treeConfigBytes := []byte{}
+	if treeConfig != nil {
+		treeConfigBytes, err = json.Marshal(treeConfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	r.w, err = link.NewWithParams(depth, wasm, zkey, verifKey, treeConfigBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -59,15 +68,21 @@ func NewRLNWithParams(depth int, wasm []byte, zkey []byte, verifKey []byte) (*RL
 	return r, nil
 }
 
-// NewRLNWithFolder generates an instance of RLN. An instance supports both zkSNARKs logics
-// and Merkle tree data structure and operations. The parameter `deptk` indicates the depth of Merkle tree
-// The parameter “
-func NewRLNWithFolder(depth int, resourcesFolderPath string) (*RLN, error) {
+// NewWithConfig generates an instance of RLN. An instance supports both zkSNARKs logics
+// and Merkle tree data structure and operations. The parameter `depth` indicates the depth of Merkle tree
+func NewWithConfig(depth int, config *Config) (*RLN, error) {
 	r := &RLN{}
-
 	var err error
 
-	r.w, err = link.NewWithFolder(depth, resourcesFolderPath)
+	configBytes := []byte{}
+	if config != nil {
+		configBytes, err = json.Marshal(config)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	r.w, err = link.New(depth, configBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -478,6 +493,15 @@ func (r *RLN) AtomicOperation(index MembershipIndex, idCommsToInsert []IDCommitm
 	execSuccess := r.w.AtomicOperation(index, idCommBytes, indicesBytes)
 	if !execSuccess {
 		return errors.New("could not execute atomic_operation")
+	}
+	return nil
+}
+
+// Flush
+func (r *RLN) Flush() error {
+	success := r.w.Flush()
+	if !success {
+		return errors.New("cannot flush db")
 	}
 	return nil
 }

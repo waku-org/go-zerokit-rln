@@ -17,6 +17,27 @@ type RLNSuite struct {
 	suite.Suite
 }
 
+func (s *RLNSuite) TestNew() {
+	rln, err := NewRLN()
+	s.NoError(err)
+
+	root1, err := rln.GetMerkleRoot()
+	s.NoError(err)
+	s.Len(root1, 32)
+
+	config := &Config{
+		ResourcesFolder: "tree_height_20",
+	}
+
+	rln2, err := NewWithConfig(20, config)
+	s.NoError(err)
+
+	root2, err := rln2.GetMerkleRoot()
+	s.NoError(err)
+	s.Len(root2, 32)
+	s.Equal(root1, root2)
+}
+
 func (s *RLNSuite) TestMembershipKeyGen() {
 	rln, err := NewRLN()
 	s.NoError(err)

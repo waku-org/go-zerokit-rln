@@ -62,6 +62,19 @@ type RateLimitProof struct {
 	RLNIdentifier RLNIdentifier `json:"rlnIdentifier"`
 }
 
+type TreeConfig struct {
+	CacheCapacity int    `json:"cache_capacity"`
+	Mode          string `json:"mode"`
+	Compression   bool   `json:"compression"`
+	FlushInterval int    `json:"flush_interval"`
+	Path          string `json:"path"`
+}
+
+type Config struct {
+	ResourcesFolder string      `json:"resources_folder"`
+	TreeConfig      *TreeConfig `json:"tree_config,omitempty"`
+}
+
 type MembershipIndex = uint
 
 type ProofMetadata struct {

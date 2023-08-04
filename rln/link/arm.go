@@ -10,16 +10,16 @@ type RLNWrapper struct {
 	ffi *r.RLN
 }
 
-func NewWithParams(depth int, wasm []byte, zkey []byte, verifKey []byte) (*RLNWrapper, error) {
-	rln, err := r.NewWithParams(depth, wasm, zkey, verifKey)
+func NewWithParams(depth int, wasm []byte, zkey []byte, verifKey []byte, treeConfig []byte) (*RLNWrapper, error) {
+	rln, err := r.NewWithParams(depth, wasm, zkey, verifKey, treeConfig)
 	if err != nil {
 		return nil, err
 	}
 	return &RLNWrapper{ffi: rln}, nil
 }
 
-func NewWithFolder(depth int, resourcesFolderPath string) (*RLNWrapper, error) {
-	rln, err := r.NewWithFolder(depth, resourcesFolderPath)
+func New(depth int, config []byte) (*RLNWrapper, error) {
+	rln, err := r.New(uint(depth), config)
 	if err != nil {
 		return nil, err
 	}
@@ -104,4 +104,8 @@ func (i RLNWrapper) SetMetadata(metadata []byte) bool {
 
 func (i RLNWrapper) GetMetadata() ([]byte, error) {
 	return i.ffi.GetMetadata()
+}
+
+func (i RLNWrapper) Flush() bool {
+	return i.ffi.Flush()
 }

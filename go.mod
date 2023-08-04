@@ -4,9 +4,9 @@ go 1.18
 
 require (
 	github.com/stretchr/testify v1.7.2
-	github.com/waku-org/go-zerokit-rln-apple v0.0.0-20230803113401-9a7ef94d120e
-	github.com/waku-org/go-zerokit-rln-arm v0.0.0-20230801152407-8101ff87ee0a
-	github.com/waku-org/go-zerokit-rln-x86_64 v0.0.0-20230801140722-0a4e68d0b8f5
+	github.com/waku-org/go-zerokit-rln-apple v0.0.0-20230807124901-05ef8aca570d
+	github.com/waku-org/go-zerokit-rln-arm v0.0.0-20230807124929-ea702b1b4305
+	github.com/waku-org/go-zerokit-rln-x86_64 v0.0.0-20230807124913-ea636e5b4005
 )
 
 require (

@@ -62,12 +62,29 @@ type RateLimitProof struct {
 	RLNIdentifier RLNIdentifier `json:"rlnIdentifier"`
 }
 
+type TreeDepth = int
+
+const (
+	TreeDepth20 TreeDepth = 20
+	TreeDepth15 TreeDepth = 15
+	TreeDepth19 TreeDepth = 19
+)
+
+const DefaultTreeDepth = TreeDepth20
+
+type TreeMode string
+
+const (
+	HighThroughput TreeMode = "HighThroughput"
+	LowSpace       TreeMode = "LowSpace"
+)
+
 type TreeConfig struct {
-	CacheCapacity int    `json:"cache_capacity"`
-	Mode          string `json:"mode"`
-	Compression   bool   `json:"compression"`
-	FlushInterval int    `json:"flush_interval"`
-	Path          string `json:"path"`
+	CacheCapacity int      `json:"cache_capacity"`
+	Mode          TreeMode `json:"mode"`
+	Compression   bool     `json:"compression"`
+	FlushInterval int      `json:"flush_interval"`
+	Path          string   `json:"path"`
 }
 
 type Config struct {

@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/waku-org/go-zerokit-rln/rln/link"
-	"github.com/waku-org/go-zerokit-rln/rln/resources"
 )
 
 // RLN represents the context used for rln.
@@ -19,36 +18,14 @@ type RLN struct {
 // NewRLN generates an instance of RLN. An instance supports both zkSNARKs logics
 // and Merkle tree data structure and operations. It uses a depth of 20 by default
 func NewRLN() (*RLN, error) {
-	wasm, err := resources.Asset("tree_height_20/rln.wasm")
-	if err != nil {
-		return nil, err
-	}
-
-	zkey, err := resources.Asset("tree_height_20/rln_final.zkey")
-	if err != nil {
-		return nil, err
-	}
-
-	verifKey, err := resources.Asset("tree_height_20/verification_key.json")
-	if err != nil {
-		return nil, err
-	}
-
-	r := &RLN{}
-
-	depth := 20
-
-	r.w, err = link.NewWithParams(depth, wasm, zkey, verifKey, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return r, nil
+	return NewWithConfig(DefaultTreeDepth, &Config{
+		ResourcesFolder: "tree_height_20",
+	})
 }
 
 // NewRLNWithParams generates an instance of RLN. An instance supports both zkSNARKs logics
 // and Merkle tree data structure and operations. The parameter `depth“ indicates the depth of Merkle tree
-func NewRLNWithParams(depth int, wasm []byte, zkey []byte, verifKey []byte, treeConfig *TreeConfig) (*RLN, error) {
+func NewRLNWithParams(depth TreeDepth, wasm []byte, zkey []byte, verifKey []byte, treeConfig *TreeConfig) (*RLN, error) {
 	r := &RLN{}
 	var err error
 
@@ -70,7 +47,7 @@ func NewRLNWithParams(depth int, wasm []byte, zkey []byte, verifKey []byte, tree
 
 // NewWithConfig generates an instance of RLN. An instance supports both zkSNARKs logics
 // and Merkle tree data structure and operations. The parameter `depth` indicates the depth of Merkle tree
-func NewWithConfig(depth int, config *Config) (*RLN, error) {
+func NewWithConfig(depth TreeDepth, config *Config) (*RLN, error) {
 	r := &RLN{}
 	var err error
 

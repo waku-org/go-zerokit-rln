@@ -15,17 +15,19 @@ type RLN struct {
 	w *link.RLNWrapper
 }
 
+func getResourcesFolder(depth TreeDepth) string {
+	return fmt.Sprintf("tree_height_%d", depth)
+}
+
 // NewRLN generates an instance of RLN. An instance supports both zkSNARKs logics
 // and Merkle tree data structure and operations. It uses a depth of 20 by default
 func NewRLN() (*RLN, error) {
-	return NewWithConfig(DefaultTreeDepth, &Config{
-		ResourcesFolder: "tree_height_20",
-	})
+	return NewWithConfig(DefaultTreeDepth, nil)
 }
 
 // NewRLNWithParams generates an instance of RLN. An instance supports both zkSNARKs logics
 // and Merkle tree data structure and operations. The parameter `depth“ indicates the depth of Merkle tree
-func NewRLNWithParams(depth TreeDepth, wasm []byte, zkey []byte, verifKey []byte, treeConfig *TreeConfig) (*RLN, error) {
+func NewRLNWithParams(depth int, wasm []byte, zkey []byte, verifKey []byte, treeConfig *TreeConfig) (*RLN, error) {
 	r := &RLN{}
 	var err error
 
@@ -47,19 +49,19 @@ func NewRLNWithParams(depth TreeDepth, wasm []byte, zkey []byte, verifKey []byte
 
 // NewWithConfig generates an instance of RLN. An instance supports both zkSNARKs logics
 // and Merkle tree data structure and operations. The parameter `depth` indicates the depth of Merkle tree
-func NewWithConfig(depth TreeDepth, config *Config) (*RLN, error) {
+func NewWithConfig(depth TreeDepth, treeConfig *TreeConfig) (*RLN, error) {
 	r := &RLN{}
 	var err error
 
-	configBytes := []byte{}
-	if config != nil {
-		configBytes, err = json.Marshal(config)
-		if err != nil {
-			return nil, err
-		}
+	configBytes, err := json.Marshal(config{
+		ResourcesFolder: getResourcesFolder(depth),
+		TreeConfig:      treeConfig,
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	r.w, err = link.New(depth, configBytes)
+	r.w, err = link.New(int(depth), configBytes)
 	if err != nil {
 		return nil, err
 	}

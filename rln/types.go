@@ -62,7 +62,7 @@ type RateLimitProof struct {
 	RLNIdentifier RLNIdentifier `json:"rlnIdentifier"`
 }
 
-type TreeDepth = int
+type TreeDepth int
 
 const (
 	TreeDepth20 TreeDepth = 20
@@ -87,7 +87,7 @@ type TreeConfig struct {
 	Path          string   `json:"path"`
 }
 
-type Config struct {
+type config struct {
 	ResourcesFolder string      `json:"resources_folder"`
 	TreeConfig      *TreeConfig `json:"tree_config,omitempty"`
 }

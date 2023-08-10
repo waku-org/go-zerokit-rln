@@ -25,11 +25,7 @@ func (s *RLNSuite) TestNew() {
 	s.NoError(err)
 	s.Len(root1, 32)
 
-	config := &Config{
-		ResourcesFolder: "tree_height_20",
-	}
-
-	rln2, err := NewWithConfig(20, config)
+	rln2, err := NewWithConfig(DefaultTreeDepth, nil)
 	s.NoError(err)
 
 	root2, err := rln2.GetMerkleRoot()

@@ -2,6 +2,7 @@ package rln
 
 import (
 	"encoding/hex"
+	"math/big"
 )
 
 func ToIdentityCredentials(groupKeys [][]string) ([]IdentityCredential, error) {
@@ -62,9 +63,19 @@ func ToBytes32LE(hexStr string) ([32]byte, error) {
 		return [32]byte{}, err
 	}
 
-	for i := 0; i < len(b)/2; i++ {
-		b[i], b[len(b)-i-1] = b[len(b)-i-1], b[i]
+	bLen := len(b)
+	for i := 0; i < bLen/2; i++ {
+		b[i], b[bLen-i-1] = b[bLen-i-1], b[i]
 	}
 
 	return Bytes32(b), nil
+}
+
+func BigIntToBytes32(value *big.Int) [32]byte {
+	b := value.Bytes()
+	bLen := len(b)
+	for i := 0; i < bLen/2; i++ {
+		b[i], b[bLen-i-1] = b[bLen-i-1], b[i]
+	}
+	return Bytes32(b)
 }

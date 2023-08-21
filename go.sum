@@ -17,6 +17,8 @@ github.com/waku-org/go-zerokit-rln-apple v0.0.0-20230803113401-9a7ef94d120e h1:A
 github.com/waku-org/go-zerokit-rln-apple v0.0.0-20230803113401-9a7ef94d120e/go.mod h1:KYykqtdApHVYZ3G0spwMnoxc5jH5eI3jyO9SwsSfi48=
 github.com/waku-org/go-zerokit-rln-apple v0.0.0-20230807124901-05ef8aca570d h1:7Ot7vJAniJWQkarZBFxmjRo39gGksKcqs4kZ10l+szs=
 github.com/waku-org/go-zerokit-rln-apple v0.0.0-20230807124901-05ef8aca570d/go.mod h1:KYykqtdApHVYZ3G0spwMnoxc5jH5eI3jyO9SwsSfi48=
+github.com/waku-org/go-zerokit-rln-apple v0.0.0-20230821155521-70f1ff564bae h1:VXgstV6RFUs6L/x0Xad4s0BIJ8hVEv1pyrByYzvZdT0=
+github.com/waku-org/go-zerokit-rln-apple v0.0.0-20230821155521-70f1ff564bae/go.mod h1:KYykqtdApHVYZ3G0spwMnoxc5jH5eI3jyO9SwsSfi48=
 github.com/waku-org/go-zerokit-rln-arm v0.0.0-20230801152407-8101ff87ee0a h1:10cre+P76QvnLeyeCVAM8WDbUCri/y5xY3LtwI9Y5DE=
 github.com/waku-org/go-zerokit-rln-arm v0.0.0-20230801152407-8101ff87ee0a/go.mod h1:7cSGUoGVIla1IpnChrLbkVjkYgdOcr7rcifEfh4ReR4=
 github.com/waku-org/go-zerokit-rln-arm v0.0.0-20230804193517-1b9eff57e592 h1:v1+rpINORPzMfBxoLpJMTB+8Z69gb7tbfTu7gAn4heg=

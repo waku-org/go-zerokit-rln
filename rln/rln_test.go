@@ -84,11 +84,18 @@ func (s *RLNSuite) TestInsertMembers() {
 	rln, err := NewRLN()
 	s.NoError(err)
 
-	keypair, err := rln.MembershipKeyGen()
+	var commitments []IDCommitment
+	for i := 0; i < 10; i++ {
+		keypair, err := rln.MembershipKeyGen()
+		s.NoError(err)
+		commitments = append(commitments, keypair.IDCommitment)
+	}
+
+	err = rln.InsertMembers(0, commitments)
 	s.NoError(err)
 
-	err = rln.InsertMembers(0, []IDCommitment{keypair.IDCommitment})
-	s.NoError(err)
+	numLeaves := rln.LeavesSet()
+	s.Equal(uint(10), numLeaves)
 }
 
 func (s *RLNSuite) TestRemoveMember() {

@@ -15,10 +15,16 @@ github.com/stretchr/testify v1.7.2 h1:4jaiDzPyXQvSd7D0EjG45355tLlV3VOECpq10pLC+8
 github.com/stretchr/testify v1.7.2/go.mod h1:R6va5+xMeoiuVRoj+gSkQ7d3FALtqAAGI1FQKckRals=
 github.com/waku-org/go-zerokit-rln-apple v0.0.0-20230905213302-1d6d18a03e7c h1:aDn17iEMrdXeQ6dp+Cv3ywJYStkomkvKWv8I00iy79c=
 github.com/waku-org/go-zerokit-rln-apple v0.0.0-20230905213302-1d6d18a03e7c/go.mod h1:KYykqtdApHVYZ3G0spwMnoxc5jH5eI3jyO9SwsSfi48=
+github.com/waku-org/go-zerokit-rln-apple v0.0.0-20230914230757-87caaeb9e6c9 h1:bYnGf+NdSDOoxpGmGSiJsaiiDCPcZPMFYwcxMfONUE0=
+github.com/waku-org/go-zerokit-rln-apple v0.0.0-20230914230757-87caaeb9e6c9/go.mod h1:KYykqtdApHVYZ3G0spwMnoxc5jH5eI3jyO9SwsSfi48=
 github.com/waku-org/go-zerokit-rln-arm v0.0.0-20230905183322-05f4cda61468 h1:yNRDUyWJu/wHEPLps5D/Zce24mu/5ax2u1pXsMwRPbg=
 github.com/waku-org/go-zerokit-rln-arm v0.0.0-20230905183322-05f4cda61468/go.mod h1:7cSGUoGVIla1IpnChrLbkVjkYgdOcr7rcifEfh4ReR4=
+github.com/waku-org/go-zerokit-rln-arm v0.0.0-20230914230828-f14923ed4dac h1:50Us7F8/2V0qIpEenexZ7gNRHIPakyYG6GSlpb+MqkY=
+github.com/waku-org/go-zerokit-rln-arm v0.0.0-20230914230828-f14923ed4dac/go.mod h1:7cSGUoGVIla1IpnChrLbkVjkYgdOcr7rcifEfh4ReR4=
 github.com/waku-org/go-zerokit-rln-x86_64 v0.0.0-20230905182930-2b11e72ef866 h1:dURzhyGtPrpmBJcnY4hpY83dW81cZimkZ8U+S89ANd0=
 github.com/waku-org/go-zerokit-rln-x86_64 v0.0.0-20230905182930-2b11e72ef866/go.mod h1:+LeEYoW5/uBUTVjtBGLEVCUe9mOYAlu5ZPkIxLOSr5Y=
+github.com/waku-org/go-zerokit-rln-x86_64 v0.0.0-20230914230901-6057b9728a32 h1:JAQUiPcH26rgkNAPEhLPtRxvPaYiPoLbtbZnmz5ALeI=
+github.com/waku-org/go-zerokit-rln-x86_64 v0.0.0-20230914230901-6057b9728a32/go.mod h1:+LeEYoW5/uBUTVjtBGLEVCUe9mOYAlu5ZPkIxLOSr5Y=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntNwaWcugrBjAiHlqqRiVk=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EVd6muEfDQjcINNoR0C8j2r3qZ4Q=

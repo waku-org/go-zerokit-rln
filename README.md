@@ -59,3 +59,24 @@ git push
 ````
 And create a PR
 
+
+# Adding a new architecture
+
+1. Depending on the architecture/platform you want to add, clone one of these repositories.
+- https://github.com/waku-org/go-zerokit-rln-apple
+- https://github.com/waku-org/go-zerokit-rln-arm
+- https://github.com/waku-org/go-zerokit-rln-x86_64
+2. Edit `./scripts/build.sh` to add the new architecture. Refer to this list of [supported targets](https://github.com/cross-rs/cross#supported-targets)
+3. Edit `./rln/link.go` to add a **cgo** build tag for the new architecture
+4. Commit the changes and then execute
+```bash
+export GO_RLN_ARCH=x86_64       # Replace this for the platform you just updated: x86_64, arm or apple
+cd /path/to/go-zerokit-rln
+git checkout master
+git pull
+go get github.com/waku-org/go-zerokit-rln-${GO_RLN_ARCH}@latest
+git add go.mod
+git add go.sum
+git commit -m "chore: bump go-zerokit-rln-${GO_RLN_ARCH}"
+git push
+```

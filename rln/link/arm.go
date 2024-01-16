@@ -82,8 +82,8 @@ func (i RLNWrapper) GetLeaf(index uint) ([]byte, error) {
 	return i.ffi.GetLeaf(index)
 }
 
-func (i RLNWrapper) GetProof(index uint) ([]byte, error) {
-	return i.ffi.GetProof(index)
+func (i RLNWrapper) GetMerkleProof(index uint) ([]byte, error) {
+	return i.ffi.GetMerkleProof(index)
 }
 
 func (i RLNWrapper) GenerateRLNProof(input []byte) ([]byte, error) {

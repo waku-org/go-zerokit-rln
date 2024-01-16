@@ -406,6 +406,11 @@ func (r *RLN) GetMerkleProof(index MembershipIndex) (MerkleProof, error) {
 		return MerkleProof{}, err
 	}
 
+	// Check if we can read the first byte
+	if len(proofBytes) < 8 {
+		return MerkleProof{}, errors.New(fmt.Sprintf("wrong output size: %d", len(proofBytes)))
+	}
+
 	var result MerkleProof
 	var numElements big.Int
 	var numIndexes big.Int
@@ -415,6 +420,14 @@ func (r *RLN) GetMerkleProof(index MembershipIndex) (MerkleProof, error) {
 	// Get amounf of elements in the proof
 	numElements.SetBytes(revert(proofBytes[offset : offset+8]))
 	offset += 8
+
+	// With numElements we can determine the expected length of the proof.
+	expectedLen := 8 + int(32*numElements.Uint64()) + 8 + int(numElements.Uint64())
+	if len(proofBytes) != expectedLen {
+		return MerkleProof{}, errors.New(fmt.Sprintf("wrong output size expected: %d, current: %d",
+			expectedLen,
+			len(proofBytes)))
+	}
 
 	result.PathElements = make([]MerkleNode, numElements.Uint64())
 

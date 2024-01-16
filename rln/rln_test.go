@@ -312,6 +312,44 @@ func (s *RLNSuite) TestInvalidProof() {
 	s.False(verified)
 }
 
+func (s *RLNSuite) TestGetMerkleProof() {
+	for _, treeDepth := range []TreeDepth{TreeDepth15, TreeDepth19, TreeDepth20} {
+		treeDepthInt := int(treeDepth)
+
+		rln, err := NewWithConfig(treeDepth, nil)
+		s.NoError(err)
+
+		leaf0 := [32]byte{0x00}
+		leaf1 := [32]byte{0x01}
+		leaf5 := [32]byte{0x05}
+
+		rln.InsertMemberAt(0, leaf0)
+		rln.InsertMemberAt(1, leaf1)
+		rln.InsertMemberAt(5, leaf5)
+
+		b1, err := rln.GetMerkleProof(0)
+		s.NoError(err)
+		s.Equal(treeDepthInt, len(b1.PathElements))
+		s.Equal(treeDepthInt, len(b1.PathIndexes))
+		// First path is right leaf [0, 1]
+		s.EqualValues(leaf1, b1.PathElements[0])
+
+		b2, err := rln.GetMerkleProof(4)
+		s.NoError(err)
+		s.Equal(treeDepthInt, len(b2.PathElements))
+		s.Equal(treeDepthInt, len(b2.PathIndexes))
+		// First path is right leaf [4, 5]
+		s.EqualValues(leaf5, b2.PathElements[0])
+
+		b3, err := rln.GetMerkleProof(10)
+		s.NoError(err)
+		s.Equal(treeDepthInt, len(b3.PathElements))
+		s.Equal(treeDepthInt, len(b3.PathIndexes))
+		// First path is right leaf. But its empty
+		s.EqualValues([32]byte{0x00}, b3.PathElements[0])
+	}
+}
+
 func (s *RLNSuite) TestEpochConsistency() {
 	// check edge cases
 	var epoch uint64 = math.MaxUint64

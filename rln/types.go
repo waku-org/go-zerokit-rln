@@ -63,6 +63,11 @@ type RateLimitProof struct {
 	RLNIdentifier RLNIdentifier `json:"rlnIdentifier"`
 }
 
+type MerkleProof struct {
+	PathElements []MerkleNode `json:"pathElements"`
+	PathIndexes  []uint8      `json:"pathIndexes"`
+}
+
 type TreeDepth int
 
 const (

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/waku-org/go-zerokit-rln/rln/link"
 )
@@ -389,6 +390,62 @@ func (r *RLN) GetLeaf(index MembershipIndex) (IDCommitment, error) {
 
 	var result IDCommitment
 	copy(result[:], b)
+
+	return result, nil
+}
+
+// GetMerkleProof returns the Merkle proof for the element at the specified index
+// The output should be parsed as: num_elements<8>|path_elements<var1>|num_indexes<8>|path_indexes<var2>
+// where num_elements indicate var1 array size and num_indexes indicate var2 array size.
+// Both num_elements and num_indexes shall be equal and match the tree depth.
+// A tree with depth 20 has 676 bytes = 8 + 32 * 20 + 8 + 20 * 1
+// Proof elements are stored as little endian
+func (r *RLN) GetMerkleProof(index MembershipIndex) (MerkleProof, error) {
+	proofBytes, err := r.w.GetMerkleProof(index)
+	if err != nil {
+		return MerkleProof{}, err
+	}
+
+	var result MerkleProof
+	var numElements big.Int
+	var numIndexes big.Int
+
+	offset := 0
+
+	// Get amounf of elements in the proof
+	numElements.SetBytes(revert(proofBytes[offset : offset+8]))
+	offset += 8
+
+	result.PathElements = make([]MerkleNode, numElements.Uint64())
+
+	for i := uint64(0); i < numElements.Uint64(); i++ {
+		copy(result.PathElements[i][:], proofBytes[offset:offset+32])
+		offset += 32
+	}
+
+	// Get amount of indexes in the path
+	numIndexes.SetBytes(revert(proofBytes[offset : offset+8]))
+	offset += 8
+
+	// Both numElements and numIndexes shall be equal and match the tree depth.
+	if numIndexes.Uint64() != numElements.Uint64() {
+		return MerkleProof{}, errors.New(fmt.Sprintf("amount of values in path and indexes do not match: %s vs %s",
+			numElements.String(), numIndexes.String()))
+	}
+
+	// TODO: Depth check, but currently not accesible
+
+	result.PathIndexes = make([]uint8, numIndexes.Uint64())
+
+	for i := uint64(0); i < numIndexes.Uint64(); i++ {
+		result.PathIndexes[i] = proofBytes[offset]
+		offset += 1
+	}
+
+	if offset != len(proofBytes) {
+		return MerkleProof{}, errors.New(
+			fmt.Sprintf("error parsing proof read: %d, length; %d", offset, len(proofBytes)))
+	}
 
 	return result, nil
 }

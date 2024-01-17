@@ -56,6 +56,14 @@ func Bytes128(b []byte) [128]byte {
 	return result
 }
 
+func Flatten(b [][32]byte) []byte {
+	var result []byte
+	for _, v := range b {
+		result = append(result, v[:]...)
+	}
+	return result
+}
+
 func ToBytes32LE(hexStr string) ([32]byte, error) {
 
 	b, err := hex.DecodeString(hexStr)

@@ -19,3 +19,5 @@ func TestBigInt(t *testing.T) {
 	newValue := Bytes32ToBigInt(b32Value)
 	require.True(t, bytes.Equal(newValue.Bytes(), value.Bytes()))
 }
+
+// TODO: Test Flatten

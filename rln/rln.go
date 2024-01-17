@@ -233,6 +233,64 @@ func (r *RLN) GenerateProof(data []byte, key IdentityCredential, index Membershi
 	}, nil
 }
 
+// input :
+/*
+identity_secret: Fr,
+path_elements: Vec<Fr>,
+identity_path_index: Vec<u8>,
+x: Fr,
+epoch: Fr,
+rln_identifier: Fr,
+*/
+// todo: output same as other function.
+// output [ proof<128> | root<32> | epoch<32> | share_x<32> | share_y<32> | nullifier<32> | rln_identifier<32> ]
+func (r *RLN) GenerateRLNProofWithWitness(witness RLNWitnessInput) (*RateLimitProof, error) {
+
+	proofBytes, err := r.w.GenerateRLNProofWithWitness(witness.serialize())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(proofBytes) != 320 {
+		return nil, errors.New("invalid proof generated")
+	}
+
+	// TODO: maybe move this into a common function (used by the other generateRlnproof function)
+	// parse the proof as [ proof<128> | root<32> | epoch<32> | share_x<32> | share_y<32> | nullifier<32> | rln_identifier<32> ]
+	proofOffset := 128
+	rootOffset := proofOffset + 32
+	epochOffset := rootOffset + 32
+	shareXOffset := epochOffset + 32
+	shareYOffset := shareXOffset + 32
+	nullifierOffset := shareYOffset + 32
+	rlnIdentifierOffset := nullifierOffset + 32
+
+	var zkproof ZKSNARK
+	var proofRoot, shareX, shareY MerkleNode
+	var epochR Epoch
+	var nullifier Nullifier
+	var rlnIdentifier RLNIdentifier
+
+	copy(zkproof[:], proofBytes[0:proofOffset])
+	copy(proofRoot[:], proofBytes[proofOffset:rootOffset])
+	copy(epochR[:], proofBytes[rootOffset:epochOffset])
+	copy(shareX[:], proofBytes[epochOffset:shareXOffset])
+	copy(shareY[:], proofBytes[shareXOffset:shareYOffset])
+	copy(nullifier[:], proofBytes[shareYOffset:nullifierOffset])
+	copy(rlnIdentifier[:], proofBytes[nullifierOffset:rlnIdentifierOffset])
+
+	return &RateLimitProof{
+		Proof:         zkproof,
+		MerkleRoot:    proofRoot,
+		Epoch:         epochR,
+		ShareX:        shareX,
+		ShareY:        shareY,
+		Nullifier:     nullifier,
+		RLNIdentifier: rlnIdentifier,
+	}, nil
+
+}
+
 func serialize32(roots [][32]byte) []byte {
 	var result []byte
 	for _, r := range roots {
@@ -405,6 +463,8 @@ func (r *RLN) GetMerkleProof(index MembershipIndex) (MerkleProof, error) {
 	if err != nil {
 		return MerkleProof{}, err
 	}
+
+	// TODO: Take this from the function
 
 	// Check if we can read the first byte
 	if len(proofBytes) < 8 {

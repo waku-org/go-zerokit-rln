@@ -350,6 +350,64 @@ func (s *RLNSuite) TestGetMerkleProof() {
 	}
 }
 
+func (s *RLNSuite) TestGenerateRLNProofWithWitness() {
+	rln, err := NewRLN()
+	s.NoError(err)
+
+	memKeys, err := rln.MembershipKeyGen()
+	s.NoError(err)
+
+	//peer's index in the Merkle Tree
+	index := 5
+
+	// Create a Merkle tree with random members
+	for i := 0; i < 10; i++ {
+		if i == index {
+			// insert the current peer's pk
+			err := rln.InsertMember(memKeys.IDCommitment)
+			s.NoError(err)
+		} else {
+			// create a new key pair
+			memberKeys, err := rln.MembershipKeyGen()
+			s.NoError(err)
+
+			err = rln.InsertMember(memberKeys.IDCommitment)
+			s.NoError(err)
+		}
+	}
+
+	root, err := rln.GetMerkleRoot()
+	s.NoError(err)
+
+	// prepare the message
+	msg := []byte("Hello")
+
+	// prepare the epoch
+	var epoch Epoch
+
+	badIndex := 4
+
+	merkleProof, err := rln.GetMerkleProof(uint(badIndex))
+	s.NoError(err)
+
+	rlnWitness := RLNWitnessInput{
+		IdentityCredential: *memKeys,
+		MerkleProof:        merkleProof,
+		Data:               msg,
+		Epoch:              epoch,
+		RlnIdentifier:      [32]byte{0x00, 0x00, 0x00}, // TODO
+	}
+
+	// generate proof
+	proofRes, err := rln.GenerateRLNProofWithWitness(rlnWitness)
+	s.NoError(err)
+
+	// verify the proof (should not be verified)
+	verified, err := rln.Verify(msg, *proofRes, root)
+	s.NoError(err)
+	s.False(verified)
+}
+
 func (s *RLNSuite) TestEpochConsistency() {
 	// check edge cases
 	var epoch uint64 = math.MaxUint64

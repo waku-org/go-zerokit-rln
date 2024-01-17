@@ -68,6 +68,14 @@ type MerkleProof struct {
 	PathIndexes  []uint8      `json:"pathIndexes"`
 }
 
+type RLNWitnessInput struct {
+	IdentityCredential IdentityCredential `json:"identityCredential"`
+	MerkleProof        MerkleProof        `json:"merkleProof"`
+	Data               []byte             `json:"data"`
+	Epoch              Epoch              `json:"epoch"`
+	RlnIdentifier      RLNIdentifier      `json:"rlnIdentifier"` // what is this? TOOD: app specific. which one is ours?
+}
+
 type TreeDepth int
 
 const (

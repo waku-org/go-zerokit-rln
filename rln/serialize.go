@@ -1,6 +1,11 @@
 package rln
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"errors"
+	"fmt"
+	"math/big"
+)
 
 // serialize converts a RateLimitProof and the data to a byte seq
 // this conversion is used in the proofGen function
@@ -41,4 +46,83 @@ func (r RateLimitProof) serialize() []byte {
 	proofBytes = append(proofBytes, r.Nullifier[:]...)
 	proofBytes = append(proofBytes, r.RLNIdentifier[:]...)
 	return proofBytes
+}
+
+func (r *RLNWitnessInput) serialize() []byte {
+	output := make([]byte, 0)
+
+	output = append(output, r.IdentityCredential.IDSecretHash[:]...)
+	output = append(output, r.MerkleProof.serialize()...)
+	output = append(output, appendLength(r.Data)...)
+	output = append(output, r.Epoch[:]...)
+	output = append(output, r.RlnIdentifier[:]...)
+
+	return output
+}
+
+func (r *MerkleProof) serialize() []byte {
+	output := make([]byte, 0)
+
+	output = append(output, appendLength(Flatten(r.PathElements))...)
+	output = append(output, appendLength(r.PathIndexes)...)
+
+	return output
+}
+
+func (r *MerkleProof) deserialize(b []byte) error {
+
+	// Check if we can read the first byte
+	if len(b) < 8 {
+		return errors.New(fmt.Sprintf("wrong output size: %d", len(b)))
+	}
+
+	var numElements big.Int
+	var numIndexes big.Int
+
+	offset := 0
+
+	// Get amounf of elements in the proof
+	numElements.SetBytes(revert(b[offset : offset+8]))
+	offset += 8
+
+	// With numElements we can determine the expected length of the proof.
+	expectedLen := 8 + int(32*numElements.Uint64()) + 8 + int(numElements.Uint64())
+	if len(b) != expectedLen {
+		return errors.New(fmt.Sprintf("wrong output size expected: %d, current: %d",
+			expectedLen,
+			len(b)))
+	}
+
+	r.PathElements = make([]MerkleNode, numElements.Uint64())
+
+	for i := uint64(0); i < numElements.Uint64(); i++ {
+		copy(r.PathElements[i][:], b[offset:offset+32])
+		offset += 32
+	}
+
+	// Get amount of indexes in the path
+	numIndexes.SetBytes(revert(b[offset : offset+8]))
+	offset += 8
+
+	// Both numElements and numIndexes shall be equal and match the tree depth.
+	if numIndexes.Uint64() != numElements.Uint64() {
+		return errors.New(fmt.Sprintf("amount of values in path and indexes do not match: %s vs %s",
+			numElements.String(), numIndexes.String()))
+	}
+
+	// TODO: Depth check, but currently not accesible
+
+	r.PathIndexes = make([]uint8, numIndexes.Uint64())
+
+	for i := uint64(0); i < numIndexes.Uint64(); i++ {
+		r.PathIndexes[i] = b[offset]
+		offset += 1
+	}
+
+	if offset != len(b) {
+		return errors.New(
+			fmt.Sprintf("error parsing proof read: %d, length; %d", offset, len(b)))
+	}
+
+	return nil
 }

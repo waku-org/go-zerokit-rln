@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/waku-org/go-zerokit-rln/rln/link"
 )
@@ -138,6 +137,16 @@ func appendLength(input []byte) []byte {
 	return append(inputLen, input...)
 }
 
+// can i reuse serialize32??
+// TODO: dirty
+// Assume that the input is a sequence of 32 byte values
+// so length is the amount of 32 byte values
+func appendLength32(input []byte) []byte {
+	inputLen := make([]byte, 8)
+	binary.LittleEndian.PutUint64(inputLen, uint64(len(input)/32))
+	return append(inputLen, input...)
+}
+
 func (r *RLN) Sha256(data []byte) (MerkleNode, error) {
 	lenPrefData := appendLength(data)
 
@@ -236,9 +245,9 @@ func (r *RLN) GenerateProof(data []byte, key IdentityCredential, index Membershi
 // input :
 /*
 identity_secret: Fr,
-path_elements: Vec<Fr>,
-identity_path_index: Vec<u8>,
-x: Fr,
+path_elements: Vec<Fr>,         |  8 * 20*32 + 20 + 8
+identity_path_index: Vec<u8>,   |  --
+x: Fr, -> this seems to be of fixed size? not size+ variablelenarray
 epoch: Fr,
 rln_identifier: Fr,
 */
@@ -350,7 +359,7 @@ func (r *RLN) Verify(data []byte, proof RateLimitProof, roots ...[32]byte) (bool
 		return false, err
 	}
 
-	return bool(res), nil
+	return res, nil
 }
 
 // RecoverIDSecret returns an IDSecret having obtained before two proofs
@@ -464,60 +473,10 @@ func (r *RLN) GetMerkleProof(index MembershipIndex) (MerkleProof, error) {
 		return MerkleProof{}, err
 	}
 
-	// TODO: Take this from the function
-
-	// Check if we can read the first byte
-	if len(proofBytes) < 8 {
-		return MerkleProof{}, errors.New(fmt.Sprintf("wrong output size: %d", len(proofBytes)))
-	}
-
 	var result MerkleProof
-	var numElements big.Int
-	var numIndexes big.Int
-
-	offset := 0
-
-	// Get amounf of elements in the proof
-	numElements.SetBytes(revert(proofBytes[offset : offset+8]))
-	offset += 8
-
-	// With numElements we can determine the expected length of the proof.
-	expectedLen := 8 + int(32*numElements.Uint64()) + 8 + int(numElements.Uint64())
-	if len(proofBytes) != expectedLen {
-		return MerkleProof{}, errors.New(fmt.Sprintf("wrong output size expected: %d, current: %d",
-			expectedLen,
-			len(proofBytes)))
-	}
-
-	result.PathElements = make([]MerkleNode, numElements.Uint64())
-
-	for i := uint64(0); i < numElements.Uint64(); i++ {
-		copy(result.PathElements[i][:], proofBytes[offset:offset+32])
-		offset += 32
-	}
-
-	// Get amount of indexes in the path
-	numIndexes.SetBytes(revert(proofBytes[offset : offset+8]))
-	offset += 8
-
-	// Both numElements and numIndexes shall be equal and match the tree depth.
-	if numIndexes.Uint64() != numElements.Uint64() {
-		return MerkleProof{}, errors.New(fmt.Sprintf("amount of values in path and indexes do not match: %s vs %s",
-			numElements.String(), numIndexes.String()))
-	}
-
-	// TODO: Depth check, but currently not accesible
-
-	result.PathIndexes = make([]uint8, numIndexes.Uint64())
-
-	for i := uint64(0); i < numIndexes.Uint64(); i++ {
-		result.PathIndexes[i] = proofBytes[offset]
-		offset += 1
-	}
-
-	if offset != len(proofBytes) {
-		return MerkleProof{}, errors.New(
-			fmt.Sprintf("error parsing proof read: %d, length; %d", offset, len(proofBytes)))
+	err = result.deserialize(proofBytes)
+	if err != nil {
+		return MerkleProof{}, err
 	}
 
 	return result, nil

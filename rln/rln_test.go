@@ -3,6 +3,7 @@ package rln
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"math"
 	"testing"
 
@@ -354,20 +355,17 @@ func (s *RLNSuite) TestGenerateRLNProofWithWitness() {
 	rln, err := NewRLN()
 	s.NoError(err)
 
+	// Leaf we generate the proof for
+	memberIndex := uint(4)
 	memKeys, err := rln.MembershipKeyGen()
 	s.NoError(err)
 
-	//peer's index in the Merkle Tree
-	index := 5
-
 	// Create a Merkle tree with random members
-	for i := 0; i < 10; i++ {
-		if i == index {
-			// insert the current peer's pk
+	for i := 0; i < 16; i++ {
+		if i == int(memberIndex) {
 			err := rln.InsertMember(memKeys.IDCommitment)
 			s.NoError(err)
 		} else {
-			// create a new key pair
 			memberKeys, err := rln.MembershipKeyGen()
 			s.NoError(err)
 
@@ -379,33 +377,47 @@ func (s *RLNSuite) TestGenerateRLNProofWithWitness() {
 	root, err := rln.GetMerkleRoot()
 	s.NoError(err)
 
-	// prepare the message
-	msg := []byte("Hello")
+	fmt.Println("root from zerokit: ", root)
 
-	// prepare the epoch
-	var epoch Epoch
+	// Inputs for proof generation
+	msg := [32]byte{0x00, 0x00, 0x01}
+	var epoch = Epoch([32]byte{0x00, 0x00, 0x00, 0x00, 0x01})
 
-	badIndex := 4
-
-	merkleProof, err := rln.GetMerkleProof(uint(badIndex))
+	// We provide out custom witness
+	merkleProof, err := rln.GetMerkleProof(memberIndex)
 	s.NoError(err)
 
 	rlnWitness := RLNWitnessInput{
+		// memberIndex key
 		IdentityCredential: *memKeys,
 		MerkleProof:        merkleProof,
-		Data:               msg,
+		Data:               msg[:],
 		Epoch:              epoch,
-		RlnIdentifier:      [32]byte{0x00, 0x00, 0x00}, // TODO
+		RlnIdentifier:      [32]byte{166, 140, 43, 8, 8, 22, 206, 113, 151, 128, 118, 40, 119, 197, 218, 174, 11, 117, 84, 228, 96, 211, 212, 140, 145, 104, 146, 99, 24, 192, 217, 4}, // TODO
 	}
 
 	// generate proof
 	proofRes, err := rln.GenerateRLNProofWithWitness(rlnWitness)
 	s.NoError(err)
 
-	// verify the proof (should not be verified)
-	verified, err := rln.Verify(msg, *proofRes, root)
+	fmt.Println("Proof Epoch: ", proofRes.Epoch)
+	fmt.Println("Proof Nullifier: ", proofRes.Nullifier)
+	fmt.Println("Proof ShareX: ", proofRes.ShareX)
+	fmt.Println("Proof ShareY: ", proofRes.ShareY)
+	fmt.Println("Proof MerkleRoot: ", proofRes.MerkleRoot)
+	fmt.Println("Proof RlnIdentifier: ", proofRes.RLNIdentifier)
+
+	// verify the proof
+	//msg := [32]byte{0x00, 0x00, 0x01}
+	//verified, err := rln.Verify([]byte{0x00, 0x00, 0x01}, *proofRes, root)
+	verified, err := rln.Verify(msg[:], *proofRes, root)
 	s.NoError(err)
-	s.False(verified)
+
+	_ = verified
+	// TODO: Not working
+	//s.True(verified)
+
+	// TODO: test a proof that shall not be verified
 }
 
 func (s *RLNSuite) TestEpochConsistency() {

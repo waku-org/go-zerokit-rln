@@ -16,41 +16,64 @@ func random32() [32]byte {
 
 func TestMerkleProofSerDe(t *testing.T) {
 
-	mProof := MerkleProof{
-		PathElements: []MerkleNode{},
-		PathIndexes:  []uint8{},
+	for _, testSize := range []int{0, 1, 8, 16, 20} {
+		mProof := MerkleProof{
+			PathElements: []MerkleNode{},
+			PathIndexes:  []uint8{},
+		}
+
+		for i := 0; i < testSize; i++ {
+			mProof.PathElements = append(mProof.PathElements, random32())
+			mProof.PathIndexes = append(mProof.PathIndexes, uint8(i%2))
+		}
+
+		// Check the size is the expected
+		ser := mProof.serialize()
+		require.Equal(t, 8+testSize*32+testSize+8, len(ser))
+
+		fmt.Println("path:", mProof.PathElements)
+		fmt.Println("Serialized: ", ser)
+
+		// Deserialize and check its matches the original
+		desProof := MerkleProof{}
+		err := desProof.deserialize(ser)
+		require.NoError(t, err)
+		require.Equal(t, mProof, desProof)
 	}
-
-	ser := mProof.serialize()
-	//require.Equal(t, []byte{0, 0, 0, 0}, ser, )
-	require.Equal(t, 16, len(ser))
-
-	mProof = MerkleProof{
-		PathElements: []MerkleNode{[32]byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0}},
-		PathIndexes:  []uint8{0},
-	}
-
-	ser = mProof.serialize()
-	//require.Equal(t, []byte{0, 0, 0, 0}, ser, )
-	require.Equal(t, 49, len(ser))
-
-	mProof = MerkleProof{}
-
-	for i := 0; i < 16; i++ {
-		mProof.PathElements = append(mProof.PathElements, random32())
-		mProof.PathIndexes = append(mProof.PathIndexes, uint8(i%2))
-	}
-
-	ser = mProof.serialize()
-	fmt.Println(ser)
-
-	desProof := MerkleProof{}
-	err := desProof.deserialize(ser)
-	require.NoError(t, err)
 
 	// TODO test for errors. eg different size.
 }
 
 func TestRLNWitnessInputSerDe(t *testing.T) {
+	// TODO: Is data size arbitrary? or fixed to 32. How its decode in zerokit seems to be fixed to 32.
+	// At least in the proof with custom witness function.
+	data := [32]byte{0x00}
+	depth := 20
 
+	mProof := MerkleProof{
+		PathElements: []MerkleNode{},
+		PathIndexes:  []uint8{},
+	}
+
+	for i := 0; i < depth; i++ {
+		mProof.PathElements = append(mProof.PathElements, random32())
+		mProof.PathIndexes = append(mProof.PathIndexes, uint8(i%2))
+	}
+
+	witness := RLNWitnessInput{
+		IdentityCredential: IdentityCredential{
+			IDSecretHash: random32(),
+		},
+		MerkleProof:   mProof,
+		Data:          data[:],
+		Epoch:         ToEpoch(10),
+		RlnIdentifier: [32]byte{0x00},
+	}
+
+	ser := witness.serialize()
+	require.Equal(t, 32+8+depth*32+depth+8+32+32+32, len(ser))
+
+	// TODO:
+	//desWitness := RLNWitnessInput{}
+	//err := desWitness.deserialize(ser)
 }

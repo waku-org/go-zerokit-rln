@@ -53,17 +53,22 @@ func (r *RLNWitnessInput) serialize() []byte {
 
 	output = append(output, r.IdentityCredential.IDSecretHash[:]...)
 	output = append(output, r.MerkleProof.serialize()...)
-	output = append(output, appendLength(r.Data)...)
+	output = append(output, r.Data...) // TODO: Data doesnt have the lend prepended. Is it fixed to 32 bytes? Different than in other places
 	output = append(output, r.Epoch[:]...)
 	output = append(output, r.RlnIdentifier[:]...)
 
 	return output
 }
 
+func (r *RLNWitnessInput) deserialize(b []byte) error {
+
+	return errors.New("not implemented")
+}
+
 func (r *MerkleProof) serialize() []byte {
 	output := make([]byte, 0)
 
-	output = append(output, appendLength(Flatten(r.PathElements))...)
+	output = append(output, appendLength32(Flatten(r.PathElements))...)
 	output = append(output, appendLength(r.PathIndexes)...)
 
 	return output
@@ -73,7 +78,7 @@ func (r *MerkleProof) deserialize(b []byte) error {
 
 	// Check if we can read the first byte
 	if len(b) < 8 {
-		return errors.New(fmt.Sprintf("wrong output size: %d", len(b)))
+		return errors.New(fmt.Sprintf("wrong input size: %d", len(b)))
 	}
 
 	var numElements big.Int
@@ -88,7 +93,7 @@ func (r *MerkleProof) deserialize(b []byte) error {
 	// With numElements we can determine the expected length of the proof.
 	expectedLen := 8 + int(32*numElements.Uint64()) + 8 + int(numElements.Uint64())
 	if len(b) != expectedLen {
-		return errors.New(fmt.Sprintf("wrong output size expected: %d, current: %d",
+		return errors.New(fmt.Sprintf("wrong input size expected: %d, current: %d",
 			expectedLen,
 			len(b)))
 	}

@@ -255,6 +255,19 @@ rln_identifier: Fr,
 // output [ proof<128> | root<32> | epoch<32> | share_x<32> | share_y<32> | nullifier<32> | rln_identifier<32> ]
 func (r *RLN) GenerateRLNProofWithWitness(witness RLNWitnessInput) (*RateLimitProof, error) {
 
+	// TODO: this shouldn go here but i think there is an issue in zerokit
+	fmt.Println("len data before ", len(witness.Data))
+	// Remove its not a poseidon hash but kekkack
+	hashedData, err := r.Poseidon(witness.Data[:])
+	if err != nil {
+		return nil, err
+	}
+
+	//witness.Data = hashedData[:]
+	_ = hashedData
+
+	fmt.Println("len data after ", len(witness.Data))
+
 	proofBytes, err := r.w.GenerateRLNProofWithWitness(witness.serialize())
 	if err != nil {
 		return nil, err

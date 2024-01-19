@@ -2,7 +2,10 @@ package rln
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func ToIdentityCredentials(groupKeys [][]string) ([]IdentityCredential, error) {
@@ -105,4 +108,40 @@ func Bytes32ToBigInt(value [32]byte) *big.Int {
 	result := new(big.Int)
 	result.SetBytes(b)
 	return result
+}
+
+func EndianConvertTODO(data []byte) [32]byte {
+
+	hashGoEth := crypto.Keccak256(data[:])
+	_ = hashGoEth
+	//if len(hashGoEth) != 32 {
+	//	fmt.Println("errorrrrrr")
+	//	}
+	myHash32 := [32]byte{}
+	//	copy(myHash32[:], hashGoEth)
+
+	// el hash esta controlado por ahora
+	copy(myHash32[:], data)
+
+	fmt.Println("inpit is: ", data)
+	fmt.Println("hash is: ", myHash32)
+
+	var uintVals [4]uint64
+
+	for i := 0; i < 4; i++ {
+		chunk := make([]byte, 8)
+		copy(chunk, myHash32[i*8:(i+1)*8])
+		fmt.Println("chunk is: ", chunk)
+
+		myBig := new(big.Int)
+		myBig.SetBytes(revert(chunk))
+		fmt.Println("big is: ", myBig)
+		uintVals[i] = myBig.Uint64()
+	}
+
+	fmt.Println("uintVals is: ", uintVals)
+
+	returnthis := [32]byte{}
+
+	return returnthis
 }

@@ -380,25 +380,53 @@ func (s *RLNSuite) TestGenerateRLNProofWithWitness() {
 	fmt.Println("root from zerokit: ", root)
 
 	// Inputs for proof generation
-	msg := [32]byte{0x00, 0x00, 0x01}
+	msg := [32]byte{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0}
+	//msg := [32]byte{69, 7, 140, 46, 26, 131, 147, 30, 161, 68, 2, 5, 234, 195, 227, 223, 119, 187, 116, 97, 153, 70, 71, 254, 60, 149, 54, 109, 77, 79, 105, 20}
 	var epoch = Epoch([32]byte{0x00, 0x00, 0x00, 0x00, 0x01})
 
 	// We provide out custom witness
 	merkleProof, err := rln.GetMerkleProof(memberIndex)
 	s.NoError(err)
 
+	//hashMsg, err := rln.Poseidon(msg[:])
+	//s.NoError(err)
+	hashMsg := [32]byte{69, 7, 140, 46, 26, 131, 147, 30, 161, 68, 2, 5, 234, 195, 227, 223, 119, 187, 116, 97, 153, 70, 71, 254, 60, 149, 54, 109, 77, 79, 105, 20}
+
 	rlnWitness := RLNWitnessInput{
 		// memberIndex key
 		IdentityCredential: *memKeys,
 		MerkleProof:        merkleProof,
-		Data:               msg[:],
+		Data:               hashMsg[:],
 		Epoch:              epoch,
 		RlnIdentifier:      [32]byte{166, 140, 43, 8, 8, 22, 206, 113, 151, 128, 118, 40, 119, 197, 218, 174, 11, 117, 84, 228, 96, 211, 212, 140, 145, 104, 146, 99, 24, 192, 217, 4}, // TODO
 	}
 
+	fmt.Println("Witness secrethash ", rlnWitness.IdentityCredential.IDSecretHash)
+	fmt.Println("Witness merkle path", rlnWitness.MerkleProof.PathElements)
+	fmt.Println("Witness merkle indexes", rlnWitness.MerkleProof.PathIndexes)
+	fmt.Println("Witness data", rlnWitness.Data)
+	fmt.Println("Witness epoch", rlnWitness.Epoch)
+	fmt.Println("Witness rln identifier", rlnWitness.RlnIdentifier)
+
 	// generate proof
 	proofRes, err := rln.GenerateRLNProofWithWitness(rlnWitness)
 	s.NoError(err)
+
+	//proofRes.ShareX = dataToReplace
+
+	fmt.Println("Proof Epoch: ", proofRes)
+
+	// TODO: for testing. proof without witness (are proofs deterministic? maybe not)
+	proofRes2, err := rln.GenerateProof(msg[:], *memKeys, MembershipIndex(memberIndex), epoch)
+	s.NoError(err)
+
+	fmt.Println("Proof1 Epoch: ", proofRes2.Epoch)
+	fmt.Println("Proof1 Nullifier: ", proofRes2.Nullifier)
+	fmt.Println("Proof1 ShareX: ", proofRes2.ShareX)
+	fmt.Println("Proof1 ShareY: ", proofRes2.ShareY)
+	fmt.Println("Proof1 MerkleRoot: ", proofRes2.MerkleRoot)
+	fmt.Println("Proof1 RlnIdentifier: ", proofRes2.RLNIdentifier)
 
 	fmt.Println("Proof Epoch: ", proofRes.Epoch)
 	fmt.Println("Proof Nullifier: ", proofRes.Nullifier)
@@ -407,7 +435,12 @@ func (s *RLNSuite) TestGenerateRLNProofWithWitness() {
 	fmt.Println("Proof MerkleRoot: ", proofRes.MerkleRoot)
 	fmt.Println("Proof RlnIdentifier: ", proofRes.RLNIdentifier)
 
-	// verify the proof
+	// Verifty old proofs
+	verified1, err := rln.Verify(msg[:], *proofRes2, root)
+	s.NoError(err)
+	s.True(verified1)
+
+	// verify the proof with the witness
 	//msg := [32]byte{0x00, 0x00, 0x01}
 	//verified, err := rln.Verify([]byte{0x00, 0x00, 0x01}, *proofRes, root)
 	verified, err := rln.Verify(msg[:], *proofRes, root)
@@ -415,7 +448,7 @@ func (s *RLNSuite) TestGenerateRLNProofWithWitness() {
 
 	_ = verified
 	// TODO: Not working
-	//s.True(verified)
+	s.True(verified)
 
 	// TODO: test a proof that shall not be verified
 }

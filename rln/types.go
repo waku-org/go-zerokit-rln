@@ -74,7 +74,7 @@ type RLNWitnessInput struct {
 	MerkleProof        MerkleProof        `json:"merkleProof"`
 
 	// This is not the data but the hashed version of it "x"..TODO rename and reconsider
-	Data          []byte        `json:"data"`
+	Data          []byte        `json:"data"` // TODO: this should be fixed 32
 	Epoch         Epoch         `json:"epoch"`
 	RlnIdentifier RLNIdentifier `json:"rlnIdentifier"` // what is this? TOOD: app specific. which one is ours?
 }

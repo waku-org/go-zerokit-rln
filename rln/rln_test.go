@@ -377,80 +377,51 @@ func (s *RLNSuite) TestGenerateRLNProofWithWitness() {
 	root, err := rln.GetMerkleRoot()
 	s.NoError(err)
 
+	// TODO: Add some asserts on roots
 	fmt.Println("root from zerokit: ", root)
 
 	// Inputs for proof generation
-	msg := [32]byte{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0}
-	//msg := [32]byte{69, 7, 140, 46, 26, 131, 147, 30, 161, 68, 2, 5, 234, 195, 227, 223, 119, 187, 116, 97, 153, 70, 71, 254, 60, 149, 54, 109, 77, 79, 105, 20}
+	msg := []byte("hi there")
 	var epoch = Epoch([32]byte{0x00, 0x00, 0x00, 0x00, 0x01})
 
 	// We provide out custom witness
 	merkleProof, err := rln.GetMerkleProof(memberIndex)
 	s.NoError(err)
 
-	//hashMsg, err := rln.Poseidon(msg[:])
-	//s.NoError(err)
-	hashMsg := [32]byte{69, 7, 140, 46, 26, 131, 147, 30, 161, 68, 2, 5, 234, 195, 227, 223, 119, 187, 116, 97, 153, 70, 71, 254, 60, 149, 54, 109, 77, 79, 105, 20}
+	// TODO: This should be abstracted away, move inside somewhere
+	x := HashToBN255(msg)
 
 	rlnWitness := RLNWitnessInput{
 		// memberIndex key
 		IdentityCredential: *memKeys,
 		MerkleProof:        merkleProof,
-		Data:               hashMsg[:],
+		Data:               x[:], // TODO: This is not really data, its a hash of data
 		Epoch:              epoch,
 		RlnIdentifier:      [32]byte{166, 140, 43, 8, 8, 22, 206, 113, 151, 128, 118, 40, 119, 197, 218, 174, 11, 117, 84, 228, 96, 211, 212, 140, 145, 104, 146, 99, 24, 192, 217, 4}, // TODO
 	}
 
-	fmt.Println("Witness secrethash ", rlnWitness.IdentityCredential.IDSecretHash)
-	fmt.Println("Witness merkle path", rlnWitness.MerkleProof.PathElements)
-	fmt.Println("Witness merkle indexes", rlnWitness.MerkleProof.PathIndexes)
-	fmt.Println("Witness data", rlnWitness.Data)
-	fmt.Println("Witness epoch", rlnWitness.Epoch)
-	fmt.Println("Witness rln identifier", rlnWitness.RlnIdentifier)
-
-	// generate proof
-	proofRes, err := rln.GenerateRLNProofWithWitness(rlnWitness)
+	// Generate a proof with our custom witness (Merkle Path of the memberIndex)
+	proofRes1, err := rln.GenerateRLNProofWithWitness(rlnWitness)
 	s.NoError(err)
-
-	//proofRes.ShareX = dataToReplace
-
-	fmt.Println("Proof Epoch: ", proofRes)
-
-	// TODO: for testing. proof without witness (are proofs deterministic? maybe not)
-	proofRes2, err := rln.GenerateProof(msg[:], *memKeys, MembershipIndex(memberIndex), epoch)
-	s.NoError(err)
-
-	fmt.Println("Proof1 Epoch: ", proofRes2.Epoch)
-	fmt.Println("Proof1 Nullifier: ", proofRes2.Nullifier)
-	fmt.Println("Proof1 ShareX: ", proofRes2.ShareX)
-	fmt.Println("Proof1 ShareY: ", proofRes2.ShareY)
-	fmt.Println("Proof1 MerkleRoot: ", proofRes2.MerkleRoot)
-	fmt.Println("Proof1 RlnIdentifier: ", proofRes2.RLNIdentifier)
-
-	fmt.Println("Proof Epoch: ", proofRes.Epoch)
-	fmt.Println("Proof Nullifier: ", proofRes.Nullifier)
-	fmt.Println("Proof ShareX: ", proofRes.ShareX)
-	fmt.Println("Proof ShareY: ", proofRes.ShareY)
-	fmt.Println("Proof MerkleRoot: ", proofRes.MerkleRoot)
-	fmt.Println("Proof RlnIdentifier: ", proofRes.RLNIdentifier)
-
-	// Verifty old proofs
-	verified1, err := rln.Verify(msg[:], *proofRes2, root)
+	verified1, err := rln.Verify(msg[:], *proofRes1, root)
 	s.NoError(err)
 	s.True(verified1)
 
-	// verify the proof with the witness
-	//msg := [32]byte{0x00, 0x00, 0x01}
-	//verified, err := rln.Verify([]byte{0x00, 0x00, 0x01}, *proofRes, root)
-	verified, err := rln.Verify(msg[:], *proofRes, root)
+	proofRes2, err := rln.GenerateProof(msg[:], *memKeys, MembershipIndex(memberIndex), epoch)
 	s.NoError(err)
 
-	_ = verified
-	// TODO: Not working
-	s.True(verified)
+	// Proof generate with custom witness match the proof generate with the witness
+	// from zerokit
+	//s.Equal(proofRes1.Proof, proofRes2.Proof) // The proof itself can be different
+	s.Equal(proofRes1.MerkleRoot, proofRes2.MerkleRoot)
+	s.Equal(proofRes1.Epoch, proofRes2.Epoch)
+	s.Equal(proofRes1.ShareX, proofRes2.ShareX)
+	s.Equal(proofRes1.ShareY, proofRes2.ShareY)
+	s.Equal(proofRes1.Nullifier, proofRes2.Nullifier)
+	s.Equal(proofRes1.RLNIdentifier, proofRes2.RLNIdentifier)
 
 	// TODO: test a proof that shall not be verified
+	// TODO: generate multiple proofs with random data
 }
 
 func (s *RLNSuite) TestEpochConsistency() {

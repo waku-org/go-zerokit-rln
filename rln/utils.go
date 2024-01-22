@@ -2,9 +2,9 @@ package rln
 
 import (
 	"encoding/hex"
-	"fmt"
 	"math/big"
 
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -110,38 +110,19 @@ func Bytes32ToBigInt(value [32]byte) *big.Int {
 	return result
 }
 
-func EndianConvertTODO(data []byte) [32]byte {
+// Hashes a byte array to a field element in BN254, as used by zerokit.
+// Equivalent to: https://github.com/vacp2p/zerokit/blob/v0.3.4/rln/src/hashers.rs
+func HashToBN255(data []byte) [32]byte {
+	// Hash is fixed to 32 bytes
+	hashed := crypto.Keccak256(data[:])
 
-	hashGoEth := crypto.Keccak256(data[:])
-	_ = hashGoEth
-	//if len(hashGoEth) != 32 {
-	//	fmt.Println("errorrrrrr")
-	//	}
-	myHash32 := [32]byte{}
-	//	copy(myHash32[:], hashGoEth)
+	// Convert to field element
+	var frBN254 fr.Element
+	frBN254.Unmarshal(revert(hashed))
+	frBN254Bytes := frBN254.Bytes()
 
-	// el hash esta controlado por ahora
-	copy(myHash32[:], data)
-
-	fmt.Println("inpit is: ", data)
-	fmt.Println("hash is: ", myHash32)
-
-	var uintVals [4]uint64
-
-	for i := 0; i < 4; i++ {
-		chunk := make([]byte, 8)
-		copy(chunk, myHash32[i*8:(i+1)*8])
-		fmt.Println("chunk is: ", chunk)
-
-		myBig := new(big.Int)
-		myBig.SetBytes(revert(chunk))
-		fmt.Println("big is: ", myBig)
-		uintVals[i] = myBig.Uint64()
-	}
-
-	fmt.Println("uintVals is: ", uintVals)
-
-	returnthis := [32]byte{}
-
-	return returnthis
+	// Return fixed size
+	fixexLen := [32]byte{}
+	copy(fixexLen[:], revert(frBN254Bytes[:]))
+	return fixexLen
 }

@@ -53,7 +53,7 @@ func (r *RLNWitnessInput) serialize() []byte {
 
 	output = append(output, r.IdentityCredential.IDSecretHash[:]...)
 	output = append(output, r.MerkleProof.serialize()...)
-	output = append(output, r.Data...) // TODO: Data doesnt have the lend prepended. Is it fixed to 32 bytes? Different than in other places
+	output = append(output, r.X[:]...)
 	output = append(output, r.Epoch[:]...)
 	output = append(output, r.RlnIdentifier[:]...)
 
@@ -114,8 +114,6 @@ func (r *MerkleProof) deserialize(b []byte) error {
 		return errors.New(fmt.Sprintf("amount of values in path and indexes do not match: %s vs %s",
 			numElements.String(), numIndexes.String()))
 	}
-
-	// TODO: Depth check, but currently not accesible
 
 	r.PathIndexes = make([]uint8, numIndexes.Uint64())
 

@@ -47,7 +47,6 @@ func TestMerkleProofSerDe(t *testing.T) {
 func TestRLNWitnessInputSerDe(t *testing.T) {
 	// TODO: Is data size arbitrary? or fixed to 32. How its decode in zerokit seems to be fixed to 32.
 	// At least in the proof with custom witness function.
-	data := [32]byte{0x00}
 	depth := 20
 
 	mProof := MerkleProof{
@@ -65,7 +64,7 @@ func TestRLNWitnessInputSerDe(t *testing.T) {
 			IDSecretHash: random32(),
 		},
 		MerkleProof:   mProof,
-		Data:          data[:],
+		X:             [32]byte{0x00},
 		Epoch:         ToEpoch(10),
 		RlnIdentifier: [32]byte{0x00},
 	}

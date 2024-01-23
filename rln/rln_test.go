@@ -355,6 +355,8 @@ func (s *RLNSuite) TestGenerateRLNProofWithWitness() {
 	rln, err := NewRLN()
 	s.NoError(err)
 
+	// TODO: Run multiple test with multiple indexes
+
 	// Leaf we generate the proof for
 	memberIndex := uint(4)
 	memKeys, err := rln.MembershipKeyGen()
@@ -380,39 +382,30 @@ func (s *RLNSuite) TestGenerateRLNProofWithWitness() {
 	// TODO: Add some asserts on roots
 	fmt.Println("root from zerokit: ", root)
 
-	// Inputs for proof generation
-	msg := []byte("hi there")
-	var epoch = Epoch([32]byte{0x00, 0x00, 0x00, 0x00, 0x01})
-
 	// We provide out custom witness
 	merkleProof, err := rln.GetMerkleProof(memberIndex)
 	s.NoError(err)
 
-	// TODO: This should be abstracted away, move inside somewhere
-	x := HashToBN255(msg)
-
-	rlnWitness := RLNWitnessInput{
-		// memberIndex key
-		IdentityCredential: *memKeys,
-		MerkleProof:        merkleProof,
-		Data:               x[:], // TODO: This is not really data, its a hash of data
-		Epoch:              epoch,
-		RlnIdentifier:      [32]byte{166, 140, 43, 8, 8, 22, 206, 113, 151, 128, 118, 40, 119, 197, 218, 174, 11, 117, 84, 228, 96, 211, 212, 140, 145, 104, 146, 99, 24, 192, 217, 4}, // TODO
-	}
+	message := []byte("some rln protected message")
+	epoch := ToEpoch(1000)
+	rlnWitness := CreateWitness(
+		*memKeys,
+		message,
+		epoch,
+		merkleProof)
 
 	// Generate a proof with our custom witness (Merkle Path of the memberIndex)
 	proofRes1, err := rln.GenerateRLNProofWithWitness(rlnWitness)
 	s.NoError(err)
-	verified1, err := rln.Verify(msg[:], *proofRes1, root)
+	verified1, err := rln.Verify(message, *proofRes1, root)
 	s.NoError(err)
 	s.True(verified1)
 
-	proofRes2, err := rln.GenerateProof(msg[:], *memKeys, MembershipIndex(memberIndex), epoch)
+	proofRes2, err := rln.GenerateProof(message, *memKeys, MembershipIndex(memberIndex), epoch)
 	s.NoError(err)
 
 	// Proof generate with custom witness match the proof generate with the witness
-	// from zerokit
-	//s.Equal(proofRes1.Proof, proofRes2.Proof) // The proof itself can be different
+	// from zerokit. Proof itself is not asserted, can be different.
 	s.Equal(proofRes1.MerkleRoot, proofRes2.MerkleRoot)
 	s.Equal(proofRes1.Epoch, proofRes2.Epoch)
 	s.Equal(proofRes1.ShareX, proofRes2.ShareX)

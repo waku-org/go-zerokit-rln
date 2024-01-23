@@ -68,13 +68,14 @@ type MerkleProof struct {
 	PathIndexes  []uint8      `json:"pathIndexes"`
 }
 
+// Equivalent: https://github.com/vacp2p/zerokit/blob/v0.3.5/rln/src/protocol.rs#L33-L40
 type RLNWitnessInput struct {
 	// TODO: Maybe dont store the whole IdentityCredential and just the secret
 	IdentityCredential IdentityCredential `json:"identityCredential"`
 	MerkleProof        MerkleProof        `json:"merkleProof"`
 
 	// This is not the data but the hashed version of it "x"..TODO rename and reconsider
-	Data          []byte        `json:"data"` // TODO: this should be fixed 32
+	X             [32]byte      `json:"x"`
 	Epoch         Epoch         `json:"epoch"`
 	RlnIdentifier RLNIdentifier `json:"rlnIdentifier"` // what is this? TOOD: app specific. which one is ours?
 }

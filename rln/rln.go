@@ -10,6 +10,10 @@ import (
 	"github.com/waku-org/go-zerokit-rln/rln/link"
 )
 
+// Same as: https://github.com/vacp2p/zerokit/blob/v0.3.5/rln/src/public.rs#L35
+// Prevents a RLN ZK proof generated for one application to be re-used in another one.
+var RLN_IDENTIFIER = [32]byte{166, 140, 43, 8, 8, 22, 206, 113, 151, 128, 118, 40, 119, 197, 218, 174, 11, 117, 84, 228, 96, 211, 212, 140, 145, 104, 146, 99, 24, 192, 217, 4}
+
 // RLN represents the context used for rln.
 type RLN struct {
 	w *link.RLNWrapper
@@ -130,17 +134,14 @@ func (r *RLN) SeededMembershipKeyGen(seed []byte) (*IdentityCredential, error) {
 
 // appendLength returns length prefixed version of the input with the following format
 // [len<8>|input<var>], the len is a 8 byte value serialized in little endian
-
 func appendLength(input []byte) []byte {
 	inputLen := make([]byte, 8)
 	binary.LittleEndian.PutUint64(inputLen, uint64(len(input)))
 	return append(inputLen, input...)
 }
 
-// can i reuse serialize32??
-// TODO: dirty
-// Assume that the input is a sequence of 32 byte values
-// so length is the amount of 32 byte values
+// Similar to appendLength but for 32 byte values. The length that is prepended is
+// the length of elements that are 32 bytes long each
 func appendLength32(input []byte) []byte {
 	inputLen := make([]byte, 8)
 	binary.LittleEndian.PutUint64(inputLen, uint64(len(input)/32))
@@ -242,31 +243,11 @@ func (r *RLN) GenerateProof(data []byte, key IdentityCredential, index Membershi
 	}, nil
 }
 
-// input :
-/*
-identity_secret: Fr,
-path_elements: Vec<Fr>,         |  8 * 20*32 + 20 + 8
-identity_path_index: Vec<u8>,   |  --
-x: Fr, -> this seems to be of fixed size? not size+ variablelenarray
-epoch: Fr,
-rln_identifier: Fr,
-*/
-// todo: output same as other function.
+// Returns a RLN proof with a custom witness, so no tree is required in the RLN instance
+// to calculate such proof. The witness can be created with GetMerkleProof data
+// input [ id_secret_hash<32> | num_elements<8> | path_elements<var1> | num_indexes<8> | path_indexes<var2> | x<32> | epoch<32> | rln_identifier<32> ]
 // output [ proof<128> | root<32> | epoch<32> | share_x<32> | share_y<32> | nullifier<32> | rln_identifier<32> ]
 func (r *RLN) GenerateRLNProofWithWitness(witness RLNWitnessInput) (*RateLimitProof, error) {
-
-	// TODO: this shouldn go here but i think there is an issue in zerokit
-	fmt.Println("len data before ", len(witness.Data))
-	// Remove its not a poseidon hash but kekkack
-	hashedData, err := r.Poseidon(witness.Data[:])
-	if err != nil {
-		return nil, err
-	}
-
-	//witness.Data = hashedData[:]
-	_ = hashedData
-
-	fmt.Println("len data after ", len(witness.Data))
 
 	proofBytes, err := r.w.GenerateRLNProofWithWitness(witness.serialize())
 	if err != nil {
@@ -277,7 +258,6 @@ func (r *RLN) GenerateRLNProofWithWitness(witness RLNWitnessInput) (*RateLimitPr
 		return nil, errors.New("invalid proof generated")
 	}
 
-	// TODO: maybe move this into a common function (used by the other generateRlnproof function)
 	// parse the proof as [ proof<128> | root<32> | epoch<32> | share_x<32> | share_y<32> | nullifier<32> | rln_identifier<32> ]
 	proofOffset := 128
 	rootOffset := proofOffset + 32

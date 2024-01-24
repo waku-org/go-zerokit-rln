@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"hash"
 	"math/big"
+	"sync"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"golang.org/x/crypto/sha3"
@@ -76,9 +77,9 @@ func Bytes128(b []byte) [128]byte {
 }
 
 func Flatten(b [][32]byte) []byte {
-	var result []byte
-	for _, v := range b {
-		result = append(result, v[:]...)
+	result := make([]byte, len(b)*32)
+	for i, v := range b {
+		copy(result[i*32:(i+1)*32], v[:])
 	}
 	return result
 }
@@ -137,6 +138,11 @@ type KeccakState interface {
 	Read([]byte) (int, error)
 }
 
+// Avoids multiple allocations if used frequently
+var keccak256Pool = sync.Pool{New: func() interface{} {
+	return NewKeccakState()
+}}
+
 // NewKeccakState creates a new KeccakState
 func NewKeccakState() KeccakState {
 	return sha3.NewLegacyKeccak256().(KeccakState)
@@ -145,11 +151,17 @@ func NewKeccakState() KeccakState {
 // Keccak256 calculates and returns the Keccak256 hash of the input data.
 func Keccak256(data ...[]byte) []byte {
 	b := make([]byte, 32)
-	d := NewKeccakState()
-	for _, b := range data {
-		d.Write(b)
+	h, ok := keccak256Pool.Get().(KeccakState)
+	if !ok {
+		h = NewKeccakState()
 	}
-	d.Read(b)
+	defer keccak256Pool.Put(h)
+	h.Reset()
+	for _, b := range data {
+		h.Write(b)
+	}
+
+	h.Read(b)
 	return b
 }
 

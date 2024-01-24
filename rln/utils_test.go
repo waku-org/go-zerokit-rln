@@ -2,7 +2,6 @@ package rln
 
 import (
 	"bytes"
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -48,7 +47,6 @@ func TestHashToBN255(t *testing.T) {
 	msg := []byte{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 	out := HashToBN255(msg)
-	fmt.Println("out: ", out)
 	require.Equal(t,
 		[32]byte{69, 7, 140, 46, 26, 131, 147, 30, 161, 68, 2, 5, 234, 195, 227, 223, 119, 187, 116, 97, 153, 70, 71, 254, 60, 149, 54, 109, 77, 79, 105, 20},
 		out)

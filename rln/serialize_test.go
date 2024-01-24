@@ -60,9 +60,7 @@ func TestRLNWitnessInputSerDe(t *testing.T) {
 	}
 
 	witness := RLNWitnessInput{
-		IdentityCredential: IdentityCredential{
-			IDSecretHash: random32(),
-		},
+		IDSecretHash:  random32(),
 		MerkleProof:   mProof,
 		X:             [32]byte{0x00},
 		Epoch:         ToEpoch(10),

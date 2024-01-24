@@ -10,17 +10,17 @@ import (
 )
 
 func CreateWitness(
-	identityCredential IdentityCredential, // TODO only the secret hash.
+	idSecretHash IDSecretHash,
 	data []byte,
 	epoch [32]byte,
 	merkleProof MerkleProof) RLNWitnessInput {
 
 	return RLNWitnessInput{
-		IdentityCredential: identityCredential,
-		MerkleProof:        merkleProof,
-		X:                  HashToBN255(data),
-		Epoch:              epoch,
-		RlnIdentifier:      RLN_IDENTIFIER,
+		IDSecretHash:  idSecretHash,
+		MerkleProof:   merkleProof,
+		X:             HashToBN255(data),
+		Epoch:         epoch,
+		RlnIdentifier: RLN_IDENTIFIER,
 	}
 }
 

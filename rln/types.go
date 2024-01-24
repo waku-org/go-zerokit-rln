@@ -70,14 +70,11 @@ type MerkleProof struct {
 
 // Equivalent: https://github.com/vacp2p/zerokit/blob/v0.3.5/rln/src/protocol.rs#L33-L40
 type RLNWitnessInput struct {
-	// TODO: Maybe dont store the whole IdentityCredential and just the secret
-	IdentityCredential IdentityCredential `json:"identityCredential"`
-	MerkleProof        MerkleProof        `json:"merkleProof"`
-
-	// This is not the data but the hashed version of it "x"..TODO rename and reconsider
+	IDSecretHash  IDSecretHash  `json:"identitySecretHash"`
+	MerkleProof   MerkleProof   `json:"merkleProof"`
 	X             [32]byte      `json:"x"`
 	Epoch         Epoch         `json:"epoch"`
-	RlnIdentifier RLNIdentifier `json:"rlnIdentifier"` // what is this? TOOD: app specific. which one is ours?
+	RlnIdentifier RLNIdentifier `json:"rlnIdentifier"`
 }
 
 type TreeDepth int

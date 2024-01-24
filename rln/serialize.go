@@ -51,7 +51,7 @@ func (r RateLimitProof) serialize() []byte {
 func (r *RLNWitnessInput) serialize() []byte {
 	output := make([]byte, 0)
 
-	output = append(output, r.IdentityCredential.IDSecretHash[:]...)
+	output = append(output, r.IDSecretHash[:]...)
 	output = append(output, r.MerkleProof.serialize()...)
 	output = append(output, r.X[:]...)
 	output = append(output, r.Epoch[:]...)

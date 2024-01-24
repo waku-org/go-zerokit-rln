@@ -6,9 +6,9 @@ require (
 	github.com/consensys/gnark-crypto v0.12.1
 	github.com/ethereum/go-ethereum v1.13.10
 	github.com/stretchr/testify v1.8.4
-	github.com/waku-org/go-zerokit-rln-apple v0.0.0-20240117094748-68b4162e8fd7
-	github.com/waku-org/go-zerokit-rln-arm v0.0.0-20240116134931-a8b8c6ab4b80
-	github.com/waku-org/go-zerokit-rln-x86_64 v0.0.0-20240116135046-2875fec12afc
+	github.com/waku-org/go-zerokit-rln-apple v0.0.0-20240124080743-37fbb869c330
+	github.com/waku-org/go-zerokit-rln-arm v0.0.0-20240124081101-5e4387508113
+	github.com/waku-org/go-zerokit-rln-x86_64 v0.0.0-20240124081123-f90cfc88a1dc
 )
 
 require (

@@ -2,10 +2,11 @@ package rln
 
 import (
 	"encoding/hex"
+	"hash"
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/ethereum/go-ethereum/crypto"
+	"golang.org/x/crypto/sha3"
 )
 
 func CreateWitness(
@@ -125,11 +126,38 @@ func Bytes32ToBigInt(value [32]byte) *big.Int {
 	return result
 }
 
+// Keccak functions take from here. To avoid unnecessary dependency to go-ethereum.
+// https://github.com/ethereum/go-ethereum/blob/v1.13.11/crypto/crypto.go#L62-L84
+
+// KeccakState wraps sha3.state. In addition to the usual hash methods, it also supports
+// Read to get a variable amount of data from the hash state. Read is faster than Sum
+// because it doesn't copy the internal state, but also modifies the internal state.
+type KeccakState interface {
+	hash.Hash
+	Read([]byte) (int, error)
+}
+
+// NewKeccakState creates a new KeccakState
+func NewKeccakState() KeccakState {
+	return sha3.NewLegacyKeccak256().(KeccakState)
+}
+
+// Keccak256 calculates and returns the Keccak256 hash of the input data.
+func Keccak256(data ...[]byte) []byte {
+	b := make([]byte, 32)
+	d := NewKeccakState()
+	for _, b := range data {
+		d.Write(b)
+	}
+	d.Read(b)
+	return b
+}
+
 // Hashes a byte array to a field element in BN254, as used by zerokit.
 // Equivalent to: https://github.com/vacp2p/zerokit/blob/v0.3.4/rln/src/hashers.rs
 func HashToBN255(data []byte) [32]byte {
 	// Hash is fixed to 32 bytes
-	hashed := crypto.Keccak256(data[:])
+	hashed := Keccak256(data[:])
 
 	// Convert to field element
 	var frBN254 fr.Element

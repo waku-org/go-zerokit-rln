@@ -477,7 +477,7 @@ func (s *RLNSuite) TestGenerateRLNProofWithWitness_VerifiesNOK() {
 		s.NoError(err)
 		s.False(verified3)
 
-		// 4) Membership does not match the index (and nor part of tree), does not verify
+		// 4) Membership does not match the index (and not part of tree), does not verify
 		merkleProof4, err := rln.GetMerkleProof(memberIndex)
 		s.NoError(err)
 

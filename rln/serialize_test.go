@@ -1,7 +1,6 @@
 package rln
 
 import (
-	"fmt"
 	"math/rand"
 	"testing"
 
@@ -31,22 +30,15 @@ func TestMerkleProofSerDe(t *testing.T) {
 		ser := mProof.serialize()
 		require.Equal(t, 8+testSize*32+testSize+8, len(ser))
 
-		fmt.Println("path:", mProof.PathElements)
-		fmt.Println("Serialized: ", ser)
-
 		// Deserialize and check its matches the original
 		desProof := MerkleProof{}
 		err := desProof.deserialize(ser)
 		require.NoError(t, err)
 		require.Equal(t, mProof, desProof)
 	}
-
-	// TODO test for errors. eg different size.
 }
 
 func TestRLNWitnessInputSerDe(t *testing.T) {
-	// TODO: Is data size arbitrary? or fixed to 32. How its decode in zerokit seems to be fixed to 32.
-	// At least in the proof with custom witness function.
 	depth := 20
 
 	mProof := MerkleProof{
@@ -69,8 +61,4 @@ func TestRLNWitnessInputSerDe(t *testing.T) {
 
 	ser := witness.serialize()
 	require.Equal(t, 32+8+depth*32+depth+8+32+32+32, len(ser))
-
-	// TODO:
-	//desWitness := RLNWitnessInput{}
-	//err := desWitness.deserialize(ser)
 }

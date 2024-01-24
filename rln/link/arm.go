@@ -90,6 +90,10 @@ func (i RLNWrapper) GenerateRLNProof(input []byte) ([]byte, error) {
 	return i.ffi.GenerateRLNProof(input)
 }
 
+func (i RLNWrapper) GenerateRLNProofWithWitness(input []byte) ([]byte, error) {
+	return i.ffi.GenerateRLNProofWithWitness(input)
+}
+
 func (i RLNWrapper) VerifyWithRoots(input []byte, roots []byte) (bool, error) {
 	return i.ffi.VerifyWithRoots(input, roots)
 }

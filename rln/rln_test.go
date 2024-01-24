@@ -350,6 +350,157 @@ func (s *RLNSuite) TestGetMerkleProof() {
 	}
 }
 
+func (s *RLNSuite) TestGenerateRLNProofWithWitness_VerifiesOK() {
+	treeSize := 20
+
+	rln, err := NewRLN()
+	s.NoError(err)
+
+	treeElements := make([]IdentityCredential, 0)
+
+	// Create a Merkle tree with random members
+	for i := 0; i < treeSize; i++ {
+		memberKeys, err := rln.MembershipKeyGen()
+		s.NoError(err)
+
+		err = rln.InsertMember(memberKeys.IDCommitment)
+		s.NoError(err)
+		treeElements = append(treeElements, *memberKeys)
+	}
+
+	// We generate proofs with a custom witness aquired outside zerokit for diferent indexes
+	for _, memberIndex := range []uint{0, 10, 13, 15} {
+		root, err := rln.GetMerkleRoot()
+		s.NoError(err)
+
+		// We provide out custom witness
+		merkleProof, err := rln.GetMerkleProof(memberIndex)
+		s.NoError(err)
+
+		message := []byte("some rln protected message")
+		epoch := ToEpoch(1000)
+
+		rlnWitness := CreateWitness(
+			treeElements[memberIndex].IDSecretHash,
+			message,
+			epoch,
+			merkleProof)
+
+		// Generate a proof with our custom witness (Merkle Path of the memberIndex)
+		proofRes1, err := rln.GenerateRLNProofWithWitness(rlnWitness)
+		s.NoError(err)
+		verified1, err := rln.Verify(message, *proofRes1, root)
+		s.NoError(err)
+		s.True(verified1)
+
+		// Generate a proof without our custom witness, to ensure they match
+		proofRes2, err := rln.GenerateProof(message, treeElements[memberIndex], MembershipIndex(memberIndex), epoch)
+		s.NoError(err)
+
+		// Ensure we have the same root
+		s.Equal(root, proofRes1.MerkleRoot)
+
+		// Proof generate with custom witness match the proof generate with the witness
+		// from zerokit. Proof itself is not asserted, can be different.
+		s.Equal(proofRes1.MerkleRoot, proofRes2.MerkleRoot)
+		s.Equal(proofRes1.Epoch, proofRes2.Epoch)
+		s.Equal(proofRes1.ShareX, proofRes2.ShareX)
+		s.Equal(proofRes1.ShareY, proofRes2.ShareY)
+		s.Equal(proofRes1.Nullifier, proofRes2.Nullifier)
+		s.Equal(proofRes1.RLNIdentifier, proofRes2.RLNIdentifier)
+	}
+}
+
+func (s *RLNSuite) TestGenerateRLNProofWithWitness_VerifiesNOK() {
+	treeSize := 20
+
+	rln, err := NewRLN()
+	s.NoError(err)
+
+	treeElements := make([]IdentityCredential, 0)
+
+	// Create a Merkle tree with random members
+	for i := 0; i < treeSize; i++ {
+		memberKeys, err := rln.MembershipKeyGen()
+		s.NoError(err)
+
+		err = rln.InsertMember(memberKeys.IDCommitment)
+		s.NoError(err)
+		treeElements = append(treeElements, *memberKeys)
+	}
+
+	// We generate proofs with a custom witness aquired outside zerokit for diferent indexes
+	for _, memberIndex := range []uint{0, 10, 13, 15} {
+		root, err := rln.GetMerkleRoot()
+		s.NoError(err)
+
+		// We provide out custom witness
+		merkleProof, err := rln.GetMerkleProof(memberIndex)
+		s.NoError(err)
+
+		message := []byte("some rln protected message")
+		epoch := ToEpoch(1000)
+
+		rlnWitness1 := CreateWitness(
+			treeElements[memberIndex].IDSecretHash,
+			message,
+			epoch,
+			merkleProof)
+
+		// Generate a proof with our custom witness (Merkle Path of the memberIndex)
+		proofRes1, err := rln.GenerateRLNProofWithWitness(rlnWitness1)
+		s.NoError(err)
+
+		// 1) Message changed, does not verify
+		verified1, err := rln.Verify([]byte("different message"), *proofRes1, root)
+		s.NoError(err)
+		s.False(verified1)
+
+		// 2) Different epoch, does not verify
+		proofRes1.Epoch = ToEpoch(999)
+		verified2, err := rln.Verify(message, *proofRes1, root)
+		s.NoError(err)
+		s.False(verified2)
+
+		// 3) Merkle proof in provided witness is wrong, does not verify
+		merkleProof.PathElements[0] = [32]byte{0x11}
+		rlnWitness2 := CreateWitness(
+			treeElements[memberIndex].IDSecretHash,
+			message,
+			epoch,
+			merkleProof)
+
+		proofRes3, err := rln.GenerateRLNProofWithWitness(rlnWitness2)
+		s.NoError(err)
+
+		verified3, err := rln.Verify(message, *proofRes3, root)
+		s.NoError(err)
+		s.False(verified3)
+
+		// 4) Membership does not match the index (and not part of tree), does not verify
+		merkleProof4, err := rln.GetMerkleProof(memberIndex)
+		s.NoError(err)
+
+		// Membership that does not match the index
+		memberKeys, err := rln.MembershipKeyGen()
+		s.NoError(err)
+
+		// Proof proves memberIndex inclusion, but provided membership is different
+		rlnWitness4 := CreateWitness(
+			memberKeys.IDSecretHash,
+			[]byte("some rln protected message"),
+			ToEpoch(999),
+			merkleProof4)
+
+		proofRes4, err := rln.GenerateRLNProofWithWitness(rlnWitness4)
+		s.NoError(err)
+
+		verified4, err := rln.Verify(message, *proofRes4, root)
+		s.NoError(err)
+		s.False(verified4)
+	}
+}
+
 func (s *RLNSuite) TestEpochConsistency() {
 	// check edge cases
 	var epoch uint64 = math.MaxUint64

@@ -6,10 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/waku-org/go-zerokit-rln/rln/link"
 )
+
+// Same as: https://github.com/vacp2p/zerokit/blob/v0.3.5/rln/src/public.rs#L35
+// Prevents a RLN ZK proof generated for one application to be re-used in another one.
+var RLN_IDENTIFIER = [32]byte{166, 140, 43, 8, 8, 22, 206, 113, 151, 128, 118, 40, 119, 197, 218, 174, 11, 117, 84, 228, 96, 211, 212, 140, 145, 104, 146, 99, 24, 192, 217, 4}
 
 // RLN represents the context used for rln.
 type RLN struct {
@@ -131,10 +134,17 @@ func (r *RLN) SeededMembershipKeyGen(seed []byte) (*IdentityCredential, error) {
 
 // appendLength returns length prefixed version of the input with the following format
 // [len<8>|input<var>], the len is a 8 byte value serialized in little endian
-
 func appendLength(input []byte) []byte {
 	inputLen := make([]byte, 8)
 	binary.LittleEndian.PutUint64(inputLen, uint64(len(input)))
+	return append(inputLen, input...)
+}
+
+// Similar to appendLength but for 32 byte values. The length that is prepended is
+// the length of elements that are 32 bytes long each
+func appendLength32(input []byte) []byte {
+	inputLen := make([]byte, 8)
+	binary.LittleEndian.PutUint64(inputLen, uint64(len(input)/32))
 	return append(inputLen, input...)
 }
 
@@ -233,6 +243,56 @@ func (r *RLN) GenerateProof(data []byte, key IdentityCredential, index Membershi
 	}, nil
 }
 
+// Returns a RLN proof with a custom witness, so no tree is required in the RLN instance
+// to calculate such proof. The witness can be created with GetMerkleProof data
+// input [ id_secret_hash<32> | num_elements<8> | path_elements<var1> | num_indexes<8> | path_indexes<var2> | x<32> | epoch<32> | rln_identifier<32> ]
+// output [ proof<128> | root<32> | epoch<32> | share_x<32> | share_y<32> | nullifier<32> | rln_identifier<32> ]
+func (r *RLN) GenerateRLNProofWithWitness(witness RLNWitnessInput) (*RateLimitProof, error) {
+
+	proofBytes, err := r.w.GenerateRLNProofWithWitness(witness.serialize())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(proofBytes) != 320 {
+		return nil, errors.New("invalid proof generated")
+	}
+
+	// parse the proof as [ proof<128> | root<32> | epoch<32> | share_x<32> | share_y<32> | nullifier<32> | rln_identifier<32> ]
+	proofOffset := 128
+	rootOffset := proofOffset + 32
+	epochOffset := rootOffset + 32
+	shareXOffset := epochOffset + 32
+	shareYOffset := shareXOffset + 32
+	nullifierOffset := shareYOffset + 32
+	rlnIdentifierOffset := nullifierOffset + 32
+
+	var zkproof ZKSNARK
+	var proofRoot, shareX, shareY MerkleNode
+	var epochR Epoch
+	var nullifier Nullifier
+	var rlnIdentifier RLNIdentifier
+
+	copy(zkproof[:], proofBytes[0:proofOffset])
+	copy(proofRoot[:], proofBytes[proofOffset:rootOffset])
+	copy(epochR[:], proofBytes[rootOffset:epochOffset])
+	copy(shareX[:], proofBytes[epochOffset:shareXOffset])
+	copy(shareY[:], proofBytes[shareXOffset:shareYOffset])
+	copy(nullifier[:], proofBytes[shareYOffset:nullifierOffset])
+	copy(rlnIdentifier[:], proofBytes[nullifierOffset:rlnIdentifierOffset])
+
+	return &RateLimitProof{
+		Proof:         zkproof,
+		MerkleRoot:    proofRoot,
+		Epoch:         epochR,
+		ShareX:        shareX,
+		ShareY:        shareY,
+		Nullifier:     nullifier,
+		RLNIdentifier: rlnIdentifier,
+	}, nil
+
+}
+
 func serialize32(roots [][32]byte) []byte {
 	var result []byte
 	for _, r := range roots {
@@ -292,7 +352,7 @@ func (r *RLN) Verify(data []byte, proof RateLimitProof, roots ...[32]byte) (bool
 		return false, err
 	}
 
-	return bool(res), nil
+	return res, nil
 }
 
 // RecoverIDSecret returns an IDSecret having obtained before two proofs
@@ -406,58 +466,10 @@ func (r *RLN) GetMerkleProof(index MembershipIndex) (MerkleProof, error) {
 		return MerkleProof{}, err
 	}
 
-	// Check if we can read the first byte
-	if len(proofBytes) < 8 {
-		return MerkleProof{}, errors.New(fmt.Sprintf("wrong output size: %d", len(proofBytes)))
-	}
-
 	var result MerkleProof
-	var numElements big.Int
-	var numIndexes big.Int
-
-	offset := 0
-
-	// Get amounf of elements in the proof
-	numElements.SetBytes(revert(proofBytes[offset : offset+8]))
-	offset += 8
-
-	// With numElements we can determine the expected length of the proof.
-	expectedLen := 8 + int(32*numElements.Uint64()) + 8 + int(numElements.Uint64())
-	if len(proofBytes) != expectedLen {
-		return MerkleProof{}, errors.New(fmt.Sprintf("wrong output size expected: %d, current: %d",
-			expectedLen,
-			len(proofBytes)))
-	}
-
-	result.PathElements = make([]MerkleNode, numElements.Uint64())
-
-	for i := uint64(0); i < numElements.Uint64(); i++ {
-		copy(result.PathElements[i][:], proofBytes[offset:offset+32])
-		offset += 32
-	}
-
-	// Get amount of indexes in the path
-	numIndexes.SetBytes(revert(proofBytes[offset : offset+8]))
-	offset += 8
-
-	// Both numElements and numIndexes shall be equal and match the tree depth.
-	if numIndexes.Uint64() != numElements.Uint64() {
-		return MerkleProof{}, errors.New(fmt.Sprintf("amount of values in path and indexes do not match: %s vs %s",
-			numElements.String(), numIndexes.String()))
-	}
-
-	// TODO: Depth check, but currently not accesible
-
-	result.PathIndexes = make([]uint8, numIndexes.Uint64())
-
-	for i := uint64(0); i < numIndexes.Uint64(); i++ {
-		result.PathIndexes[i] = proofBytes[offset]
-		offset += 1
-	}
-
-	if offset != len(proofBytes) {
-		return MerkleProof{}, errors.New(
-			fmt.Sprintf("error parsing proof read: %d, length; %d", offset, len(proofBytes)))
+	err = result.deserialize(proofBytes)
+	if err != nil {
+		return MerkleProof{}, err
 	}
 
 	return result, nil
